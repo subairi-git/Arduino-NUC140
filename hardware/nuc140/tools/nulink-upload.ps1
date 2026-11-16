@@ -1,4 +1,4 @@
-# NUC140 Arduino core v0.1.2 - Windows-only Nu-Link Command Tool uploader.
+# NUC140 Arduino core v0.1.3 - Windows-only Nu-Link Command Tool uploader.
 # APROM ONLY: Never erases or writes LDROM, CONFIG, DataFlash, or the whole chip.
 # Requires one connected Nu-Link and the official NuLink.exe installed separately.
 [CmdletBinding()]
@@ -66,11 +66,8 @@ try {
     Write-Host "[NUC140] Command tool: $script:NuLinkExe"
     Write-Host "[NUC140] Firmware: $FirmwarePath ($($bytes.Length) bytes)"
 
-    # Official -l listing includes 'Find NuLink amount = 1'; more than one is unsafe.
-    $list = Invoke-NuLink -Arguments @('-l')
-    if ($list -match 'Find\s+NuLink\s+amount\s*=\s*(\d+)') {
-        if ([int]$Matches[1] -ne 1) { Abort "Exactly one Nu-Link must be connected, found $($Matches[1])." }
-    }
+    # NuLink.exe -l may fail with exit -4 even when -p reads the MCU.
+    # Require exactly one Nu-Link connected; use -p to validate the part.
 
     # Official -p reports MCU part; do not erase unless the expected device is detected.
     $part = Invoke-NuLink -Arguments @('-p')

@@ -2,7 +2,7 @@
 """Build an Arduino Boards Manager platform archive and its package index.
 
 Arduino requires EXACTLY one top-level directory inside platform archives.
-Version follows GitHub tag GITHUB_REF_NAME, or defaults to v0.1.2 locally.
+Version follows GitHub tag GITHUB_REF_NAME, or defaults to v0.1.3 locally.
 """
 from pathlib import Path
 import hashlib
@@ -12,7 +12,7 @@ import re
 import tarfile
 
 root = Path(__file__).resolve().parent.parent
-ref_name = os.environ.get("GITHUB_REF_NAME", "v0.1.2")
+ref_name = os.environ.get("GITHUB_REF_NAME", "v0.1.3")
 if not re.fullmatch(r"v?\d+\.\d+\.\d+", ref_name):
     raise ValueError(f"Expected tag vMAJOR.MINOR.PATCH, got: {ref_name!r}")
 version = ref_name.removeprefix("v")
@@ -50,6 +50,20 @@ platform = {
         {"packager": "arduino", "name": "arm-none-eabi-gcc", "version": "7-2017q4"}
     ],
 }
+# Keep previously published versions in the generated index.
+previous_platforms = []
+previous_index_path = root / "package_nuc140_index.json"
+if previous_index_path.is_file():
+    old_index = json.loads(previous_index_path.read_text(encoding="utf-8"))
+    for package in old_index.get("packages", []):
+        if package.get("name") == "nuc140":
+            previous_platforms = [
+                p for p in package.get("platforms", [])
+                if p.get("architecture") == "nuc140"
+                and p.get("version") != version
+            ]
+            break
+
 package_index = {
     "packages": [{
         "name": "nuc140",
@@ -57,7 +71,7 @@ package_index = {
         "websiteURL": f"https://github.com/{repo}",
         "email": "",
         "help": {"online": f"https://github.com/{repo}#readme"},
-        "platforms": [platform],
+        "platforms": [platform] + previous_platforms,
         "tools": [],
     }]
 }

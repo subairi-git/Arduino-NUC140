@@ -1,2 +1,2 @@
 #pragma once
-#define ARDUINO_NUC140_CORE_VERSION "0.1.1-experimental"
+#define ARDUINO_NUC140_CORE_VERSION "0.1.3-experimental"

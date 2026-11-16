@@ -1,5 +1,5 @@
 name=Experimental Nuvoton NUC140 Boards
-version=0.1.2
+version=0.1.3
 compiler.path={runtime.tools.arm-none-eabi-gcc.path}/bin/
 compiler.c.cmd=arm-none-eabi-gcc
 compiler.cpp.cmd=arm-none-eabi-g++
@@ -19,6 +19,11 @@ recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" rcs "{archive_file_path}" "
 recipe.c.combine.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} "{archive_file_path}" -Wl,--start-group {compiler.libs} -Wl,--end-group
 recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
 recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
+# Flash and RAM section sizes as reported by arm-none-eabi-size -A.
+recipe.size.regex=^(?:\.vectors|\.text|\.preinit_array|\.init_array|\.fini_array|\.ARM\.exidx|\.ARM\.extab|\.data)\s+([0-9]+).*
+recipe.size.regex.data=^(?:\.data|\.bss|\.noinit)\s+([0-9]+).*
+recipe.output.tmp_file={build.project_name}.bin
+recipe.output.save_file={build.project_name}.{build.variant}.bin
 # Windows Nu-Link Command Tool; SWD programmer; no serial/COM port needed.
 # This runs only when the Arduino Upload button is pressed, after compilation.
 tools.nuc140_nulink.upload.pattern=powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{runtime.platform.path}/tools/nulink-upload.ps1" -FirmwarePath "{build.path}/{build.project_name}.bin"

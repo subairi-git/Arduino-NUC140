@@ -1,0 +1,12 @@
+# Nu-LB-NUC140 V2.0 (2014), NUC140VE3CN only.
+nuc140v2.name=Nu-LB-NUC140 V2.0 (NUC140VE3CN) [experimental]
+nuc140v2.build.mcu=cortex-m0
+nuc140v2.build.f_cpu=22118400L
+nuc140v2.build.board=NUC140V2
+nuc140v2.build.core=arduino
+nuc140v2.build.variant=nuc140v2
+nuc140v2.build.ldscript={runtime.platform.path}/variants/nuc140v2/flash.ld
+nuc140v2.upload.maximum_size=131072
+nuc140v2.upload.maximum_data_size=16384
+nuc140v2.upload.tool=nuc140_unsupported
+nuc140v2.upload.protocol=nulink

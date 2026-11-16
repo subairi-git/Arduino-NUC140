@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "NUC140 automatic upload not implemented. Export compiled binary, then flash with Nu-Link ICP tool compatible with your board." >&2
+exit 1

@@ -1,0 +1,23 @@
+name=Experimental Nuvoton NUC140 Boards
+version=0.1.0
+compiler.path={runtime.tools.arm-none-eabi-gcc.path}/bin/
+compiler.c.cmd=arm-none-eabi-gcc
+compiler.cpp.cmd=arm-none-eabi-g++
+compiler.ar.cmd=arm-none-eabi-ar
+compiler.objcopy.cmd=arm-none-eabi-objcopy
+compiler.size.cmd=arm-none-eabi-size
+compiler.common.flags=-mcpu=cortex-m0 -mthumb -Os -g3 -ffunction-sections -fdata-sections -Wall -Wextra -DARDUINO=10819 -DARDUINO_ARCH_NUC140 -DF_CPU={build.f_cpu}
+compiler.c.flags={compiler.common.flags} -std=gnu11
+compiler.cpp.flags={compiler.common.flags} -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics
+compiler.S.flags={compiler.common.flags} -x assembler-with-cpp
+compiler.ldflags=-mcpu=cortex-m0 -mthumb -Wl,--gc-sections -Wl,-Map,{build.path}/{build.project_name}.map -T{build.ldscript} -nostartfiles
+compiler.libs=-lc -lm -lgcc
+recipe.c.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.c.flags} -I"{runtime.platform.path}/cores/{build.core}" -I"{runtime.platform.path}/variants/{build.variant}" {includes} -c "{source_file}" -o "{object_file}"
+recipe.cpp.o.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.cpp.flags} -I"{runtime.platform.path}/cores/{build.core}" -I"{runtime.platform.path}/variants/{build.variant}" {includes} -c "{source_file}" -o "{object_file}"
+recipe.S.o.pattern="{compiler.path}{compiler.c.cmd}" {compiler.S.flags} -I"{runtime.platform.path}/cores/{build.core}" -I"{runtime.platform.path}/variants/{build.variant}" {includes} -c "{source_file}" -o "{object_file}"
+recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" rcs "{archive_file_path}" "{object_file}"
+recipe.c.combine.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} "{archive_file_path}" -Wl,--start-group {compiler.libs} -Wl,--end-group
+recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
+recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
+# Does NOT claim functioning Nu-Link upload; build/Export Compiled Binary only.
+tools.nuc140_unsupported.upload.pattern="{runtime.platform.path}/tools/upload-not-configured" "{build.path}/{build.project_name}.bin"

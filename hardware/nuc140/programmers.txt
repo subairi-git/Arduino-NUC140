@@ -1,0 +1,1 @@
+# Upload and programming deliberately not enabled in 0.1.0.

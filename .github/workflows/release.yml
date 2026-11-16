@@ -26,7 +26,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           gh release create "${GITHUB_REF_NAME}" "dist/nuc140-${VERSION}.tar.gz" \
             --title "${GITHUB_REF_NAME}" \
-            --notes "Experimental NUC140 core. Compile only; Nu-Link upload not configured." \
+            --notes "Experimental NUC140 core with Windows Nu-Link Command Tool uploader (APROM only); untested on physical hardware." \
             --verify-tag
       - name: Commit generated index to default branch
         run: |

@@ -8,5 +8,5 @@ nuc140v2.build.variant=nuc140v2
 nuc140v2.build.ldscript={runtime.platform.path}/variants/nuc140v2/flash.ld
 nuc140v2.upload.maximum_size=131072
 nuc140v2.upload.maximum_data_size=16384
-nuc140v2.upload.tool=nuc140_unsupported
+nuc140v2.upload.tool=nuc140_nulink
 nuc140v2.upload.protocol=nulink

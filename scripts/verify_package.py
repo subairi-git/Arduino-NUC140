@@ -26,4 +26,5 @@ assert f"{archive_root}/boards.txt" in paths, "Missing boards.txt"
 assert f"{archive_root}/platform.txt" in paths, "Missing platform.txt"
 assert f"{archive_root}/cores/arduino/Arduino.h" in paths, "Missing Arduino core header"
 assert f"{archive_root}/variants/nuc140v2/flash.ld" in paths, "Missing linker script"
+assert f"{archive_root}/tools/nulink-upload.ps1" in paths, "Missing Nu-Link uploader"
 print("PASS: archive has one root, required files, correct SHA-256 and size")

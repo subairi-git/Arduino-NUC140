@@ -1,5 +1,5 @@
 name=Experimental Nuvoton NUC140 Boards
-version=0.1.1
+version=0.1.2
 compiler.path={runtime.tools.arm-none-eabi-gcc.path}/bin/
 compiler.c.cmd=arm-none-eabi-gcc
 compiler.cpp.cmd=arm-none-eabi-g++
@@ -19,5 +19,6 @@ recipe.ar.pattern="{compiler.path}{compiler.ar.cmd}" rcs "{archive_file_path}" "
 recipe.c.combine.pattern="{compiler.path}{compiler.cpp.cmd}" {compiler.ldflags} -o "{build.path}/{build.project_name}.elf" {object_files} "{archive_file_path}" -Wl,--start-group {compiler.libs} -Wl,--end-group
 recipe.objcopy.bin.pattern="{compiler.path}{compiler.objcopy.cmd}" -O binary "{build.path}/{build.project_name}.elf" "{build.path}/{build.project_name}.bin"
 recipe.size.pattern="{compiler.path}{compiler.size.cmd}" -A "{build.path}/{build.project_name}.elf"
-# Does NOT claim functioning Nu-Link upload; build/Export Compiled Binary only.
-tools.nuc140_unsupported.upload.pattern="{runtime.platform.path}/tools/upload-not-configured" "{build.path}/{build.project_name}.bin"
+# Windows Nu-Link Command Tool; SWD programmer; no serial/COM port needed.
+# This runs only when the Arduino Upload button is pressed, after compilation.
+tools.nuc140_nulink.upload.pattern=powershell.exe -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "{runtime.platform.path}/tools/nulink-upload.ps1" -FirmwarePath "{build.path}/{build.project_name}.bin"

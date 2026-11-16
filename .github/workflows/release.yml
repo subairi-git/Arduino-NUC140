@@ -17,18 +17,24 @@ jobs:
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: python scripts/build_release.py
+      - name: Verify core archive and index
+        run: python scripts/verify_package.py
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" dist/nuc140-0.1.0.tar.gz --title "${GITHUB_REF_NAME}" --notes "Experimental NUC140 core. Compile only; Nu-Link upload not configured." --verify-tag
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release create "${GITHUB_REF_NAME}" "dist/nuc140-${VERSION}.tar.gz" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "Experimental NUC140 core. Compile only; Nu-Link upload not configured." \
+            --verify-tag
       - name: Commit generated index to default branch
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           git fetch origin main
           git checkout -B publish-index origin/main
           cp dist/package_nuc140_index.json package_nuc140_index.json
           git add package_nuc140_index.json
-          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Publish Boards Manager index' || exit 0
+          git -c user.name='github-actions[bot]' \
+              -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "Publish NUC140 Boards Manager ${GITHUB_REF_NAME} index" || exit 0
           git push origin HEAD:main

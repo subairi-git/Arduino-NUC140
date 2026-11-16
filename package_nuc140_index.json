@@ -12,12 +12,12 @@
         {
           "name": "Nuvoton NUC140 (Experimental)",
           "architecture": "nuc140",
-          "version": "0.1.0",
+          "version": "0.1.1",
           "category": "Contributed",
-          "url": "https://github.com/subairi-git/Arduino-NUC140/releases/download/v0.1.0/nuc140-0.1.0.tar.gz",
-          "archiveFileName": "nuc140-0.1.0.tar.gz",
-          "checksum": "SHA-256:d9b096f3a89c6499f736dfbbd91c9fe35eae091daf030289329e6eb489219fb4",
-          "size": "4342",
+          "url": "https://github.com/subairi-git/Arduino-NUC140/releases/download/v0.1.1/nuc140-0.1.1.tar.gz",
+          "archiveFileName": "nuc140-0.1.1.tar.gz",
+          "checksum": "SHA-256:20838a45805150230a23d99ceae467d4eba34cdfd0b68356702aee90f4bbce7e",
+          "size": "4345",
           "boards": [
             {
               "name": "Nu-LB-NUC140 V2.0 (NUC140VE3CN)"

@@ -1,0 +1,31 @@
+name: NUC140 UART0 ARM compile smoke
+on:
+  pull_request:
+    paths:
+      - "hardware/nuc140/**"
+      - ".github/workflows/uart-compile.yml"
+  push:
+    branches: [ "feature/uart0-serial" ]
+permissions:
+  contents: read
+jobs:
+  uart-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile NUC140 UART0 Serial on ARM Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          command -v clang++
+          mkdir -p /tmp/nuc140-uart-test
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -c "$CORE/HardwareSerial.cpp" -o /tmp/nuc140-uart-test/serial.o
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -c "$CORE/main.cpp" -o /tmp/nuc140-uart-test/main.o
+          clang $OPT -std=gnu11 -I"$CORE" -I"$VARIANT" -c "$CORE/startup.c" -o /tmp/nuc140-uart-test/startup.o
+          clang $OPT -std=gnu11 -I"$CORE" -I"$VARIANT" -c "$CORE/wiring.c" -o /tmp/nuc140-uart-test/wiring.o
+          # Arduino IDE injects Arduino.h in the preprocessed sketch.
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -include "$CORE/Arduino.h" -x c++ -c hardware/nuc140/libraries/Nuc140Examples/examples/SerialHello/SerialHello.ino -o /tmp/nuc140-uart-test/sketch.o
+          echo "PASS: Serial API + NUC140 ARM Cortex-M0 compile"

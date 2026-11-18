@@ -29,4 +29,5 @@ void delayMicroseconds(uint32_t us);
 void yield(void);
 #ifdef __cplusplus
 }
+#include "HardwareSerial.h"
 #endif

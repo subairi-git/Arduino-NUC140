@@ -1,0 +1,32 @@
+name: NUC140 Wire I2C1 ARM compile smoke
+on:
+  push:
+    branches: ["feature/wire-i2c1"]
+  pull_request:
+    paths:
+      - "hardware/nuc140/**"
+      - ".github/workflows/wire-compile.yml"
+permissions:
+  contents: read
+jobs:
+  wire-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cross-compile Wire I2C1 and EEPROM examples on Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          command -v clang++
+          mkdir -p /tmp/nuc140-wire-test
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          WIRE=hardware/nuc140/libraries/Wire
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          CXX="-std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics"
+          clang++ $OPT $CXX -Wall -Wextra -Werror -I"$WIRE/src" -c "$WIRE/src/Wire.cpp" -o /tmp/nuc140-wire-test/Wire.o
+          for example in "$WIRE"/examples/*/*.ino; do
+            name=$(basename "$example" .ino)
+            clang++ $OPT $CXX -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -I"$WIRE/src" -include "$CORE/Arduino.h" -x c++ -c "$example" -o "/tmp/nuc140-wire-test/$name.o"
+          done
+          echo "PASS: Wire I2C1 + Scanner + EEPROM 24LC64 ReadOnly"

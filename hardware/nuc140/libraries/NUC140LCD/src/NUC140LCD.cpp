@@ -32,15 +32,17 @@ void NUC140LCD::backlight(bool on) {
 
 bool NUC140LCD::send9(uint16_t data) {
   if (!initialized_) { last_error_=1; return false; }
-  digitalWrite(PD(8), LOW);
+  // Use hardware SPI3 SS0, as in Nuvoton Nu-LB-NUC140 LCD.c.
+  // SS0 low while SSR bit0=1 (manual, active low).
+  LCD_REG(SPI3_SSR)=1UL;
   uint32_t timeout=WAIT_LIMIT;
   while ((LCD_REG(SPI3_CNTRL)&SPI_BUSY) && timeout) --timeout;
-  if (!timeout) { digitalWrite(PD(8),HIGH); last_error_=2; return false; }
+  if (!timeout) { LCD_REG(SPI3_SSR)=0UL; last_error_=2; return false; }
   LCD_REG(SPI3_TX0)=data & 0x1FFUL; // bit8: 0 command, 1 data
   LCD_REG(SPI3_CNTRL)|=SPI_BUSY;
   timeout=WAIT_LIMIT;
   while ((LCD_REG(SPI3_CNTRL)&SPI_BUSY) && timeout) --timeout;
-  digitalWrite(PD(8),HIGH);
+  LCD_REG(SPI3_SSR)=0UL;
   if (!timeout) { last_error_=3; return false; }
   return true;
 }
@@ -56,8 +58,7 @@ bool NUC140LCD::begin() {
   last_error_=0;
   // Power/backlight stay off until controller setup is complete.
   backlight(false);
-  pinMode(PD(8),OUTPUT);
-  digitalWrite(PD(8),HIGH);
+  // SPI3 hardware SS0 is on PD8; do not configure PD8 as GPIO.
 
   LCD_REG(SYS_PROTECT)=0x59UL;
   LCD_REG(SYS_PROTECT)=0x16UL;
@@ -65,9 +66,8 @@ bool NUC140LCD::begin() {
   if (!(LCD_REG(SYS_PROTECT) & 1UL)) { last_error_=4; return false; }
   LCD_REG(CLK_APBCLK)|=(1UL<<15); // SPI3 clock
   LCD_REG(CLK_CLKSEL1)|=(1UL<<7); // SPI3 source HCLK (22.1184 MHz)
-  // PD8 software CS (GPIO); PD9 SCK and PD11 MOSI0 (SPI3 AF)
-  LCD_REG(GPD_MFP)=(LCD_REG(GPD_MFP)&~((1UL<<8)|(1UL<<9)|(1UL<<11))) |
-                   ((1UL<<9)|(1UL<<11));
+  // Nuvoton reference: PD8 = SPI3_SS0, PD9 = SPI3_CLK, PD11 = MOSI0.
+  LCD_REG(GPD_MFP) |= (1UL<<8) | (1UL<<9) | (1UL<<11);
   LCD_REG(SYS_PROTECT)=0;
   LCD_REG(SPI3_SSR)=0UL; // disable automatic hardware SS
   LCD_REG(SPI3_CNTRL2)=(1UL<<31); // BCn=1; SPI clock=HCLK/(DIV+1)
@@ -77,22 +77,11 @@ bool NUC140LCD::begin() {
   initialized_=true;
   delay(50);
 
-  // 128x64 LCD page/column controller command set (ST7565-compatible).
-  // This is experimental; the physical panel's exact controller is not labeled
-  // in the Nu-LB user manual. Revisit this sequence if panel stays blank.
+  // The board-specific Nuvoton LCD.c (Nu-LB-NUC140 BSP) initializes
+  // this LCD with EB, 81, A0, C0, AF. The previous speculative
+  // ST7565 sequence E2/AE/A2/C8/2F/81/18/AF could leave it blank.
   const uint8_t initSeq[] = {
-    0xE2, // software reset
-    0xAE, // display off
-    0xA2, // LCD bias 1/9
-    0xA0, // ADC/segment mapping
-    0xC8, // reverse COM scan
-    0x40, // start line 0
-    0x25, // internal resistor ratio
-    0x2F, // power supply circuit on
-    0x81, 0x18, // electronic volume / contrast
-    0xA4, // display RAM output
-    0xA6, // normal display
-    0xAF  // display on
+    0xEB, 0x81, 0xA0, 0xC0, 0xAF
   };
   for (unsigned i=0; i<sizeof(initSeq); i++) if(!cmd(initSeq[i])) return false;
   delay(40);
@@ -109,9 +98,8 @@ void NUC140LCD::setContrast(uint8_t contrast) {
 bool NUC140LCD::display() {
   if (!initialized_) { last_error_=1; return false; }
   last_error_=0;
-  // The NUC140 LCD BSP maps logical x onto reversed 132-column RAM:
-  // lcdSetAddr(page, 129-x). To use autoincrement, start at column 2,
-  // then send x=127 through 0 for each page.
+  // Reference BSP maps logical x -> physical 129-x in 132-column RAM.
+  // Start at 2 and stream buffer from right-to-left per page.
   for (uint8_t page=0; page<8; ++page) {
     setAddress(page, 2);
     if (last_error_) return false;

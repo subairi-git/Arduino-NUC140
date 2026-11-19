@@ -59,3 +59,24 @@ NOT proof of visible pixels.
 References:
 - https://www.nuvoton.com/resource-files/UM_Nu-LB-NUC140_EN_Rev2.0.pdf
 - https://github.com/OpenNuvoton/NUC100BSP
+
+## Blank screen with backlight on: pin and init fix (2026-11-19)
+
+The first LCD_Hello hardware test had an illuminated backlight but a blank LCD.
+The user confirmed the board pin labels:
+- GPD8 = SPI3_SS0
+- GPD9 = SPI3_CLK
+- GPD10 = SPI3_MISO0
+- GPD11 = SPI3_MOSI0
+- GPD14 = LCD backlight power
+
+The original experimental driver incorrectly left PD8 as a GPIO while toggling
+software CS. The corrected driver sets PD8..PD11 multi-function pins to SPI3,
+uses manual **SPI3 SSR bit0** for hardware CS (like Nuvoton's LCD.c), and
+replaces the speculative LCD init sequence with board reference commands
+`EB 81 A0 C0 AF`. The LCD controller's physical output remains to be
+retested. Use `LCD_Diagnostic`: all pixels on 3 seconds, blank 3 seconds,
+text and border 3 seconds. `display()=OK` only checks SPI transfer timeout.
+
+Source cross-check:
+https://github.com/leoochenn/Embedded-System/blob/master/Library/Nu-LB-NUC140/Source/LCD.c

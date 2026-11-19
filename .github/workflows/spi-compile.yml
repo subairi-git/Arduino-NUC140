@@ -1,0 +1,32 @@
+name: NUC140 SPI2 ARM compile smoke
+on:
+  push:
+    branches: ["feature/spi2-flash"]
+  pull_request:
+    paths:
+      - "hardware/nuc140/**"
+      - ".github/workflows/spi-compile.yml"
+permissions:
+  contents: read
+jobs:
+  spi-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cross-compile SPI2 and W25X16 examples on ARM Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          command -v clang++
+          mkdir -p /tmp/nuc140-spi-test
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          SPI=hardware/nuc140/libraries/SPI
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          CXX="-std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics"
+          clang++ $OPT $CXX -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -I"$SPI/src" -c "$SPI/src/SPI.cpp" -o /tmp/nuc140-spi-test/SPI.o
+          for example in "$SPI"/examples/*/*.ino; do
+            name=$(basename "$example" .ino)
+            clang++ $OPT $CXX -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -I"$SPI/src" -include "$CORE/Arduino.h" -x c++ -c "$example" -o "/tmp/nuc140-spi-test/$name.o"
+          done
+          echo "PASS: SPI2 + W25X16 JEDEC and status read-only examples"

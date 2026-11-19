@@ -66,8 +66,9 @@ bool NUC140LCD::begin() {
   if (!(LCD_REG(SYS_PROTECT) & 1UL)) { last_error_=4; return false; }
   LCD_REG(CLK_APBCLK)|=(1UL<<15); // SPI3 clock
   LCD_REG(CLK_CLKSEL1)|=(1UL<<7); // SPI3 source HCLK (22.1184 MHz)
-  // Nuvoton reference: PD8 = SPI3_SS0, PD9 = SPI3_CLK, PD11 = MOSI0.
-  LCD_REG(GPD_MFP) |= (1UL<<8) | (1UL<<9) | (1UL<<11);
+  // Board pin table: PD8 SS0, PD9 CLK, PD10 MISO0, PD11 MOSI0.
+  // LCD is transmit-only but still map the complete SPI3 interface.
+  LCD_REG(GPD_MFP) |= (1UL<<8) | (1UL<<9) | (1UL<<10) | (1UL<<11);
   LCD_REG(SYS_PROTECT)=0;
   LCD_REG(SPI3_SSR)=0UL; // disable automatic hardware SS
   LCD_REG(SPI3_CNTRL2)=(1UL<<31); // BCn=1; SPI clock=HCLK/(DIV+1)

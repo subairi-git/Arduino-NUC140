@@ -6,14 +6,15 @@ LCD SPI3 and PD14 for active-low backlight/power. Educational NUC140 LCD
 source demonstrates 9-bit SPI3: bit 8 = data (1), command (0), with an
 ST7565-like page/column addressing scheme.
 
-**Status:** cross-compilation succeeds, but real LCD hardware response
-has not yet been reported. Exact LCD controller is not identified in the
-board manual; initialization is an experimental ST7565-compatible candidate.
-A SPI3 send operation can succeed without proving that text appeared.
+**Status: hardware verified (user report, 2026-11-19).** The corrected
+v0.1.1 SPI3 LCD driver displayed content on the real board and the user
+confirmed that all examples work. The exact LCD controller part number
+is still not established. The first v0.1.0 preview lit the backlight but
+showed a blank screen; see the correction log below.
 
 ## Install on the user's already-patched Board Manager v0.1.2
 
-Use `NUC140-LCD12864-SPI3-Library-Install.zip`, extract then run
+Use the updated `NUC140-LCD12864-SPI3-Fix-v0.1.1.zip`, extract then run
 `INSTALL-LCD.cmd` with Arduino IDE closed.
 Only `hardware/nuc140/libraries/NUC140LCD` is copied to the installed
 board package: `%LOCALAPPDATA%\Arduino15\packages\nuc140\hardware\nuc140\0.1.2\libraries\NUC140LCD`.
@@ -41,8 +42,9 @@ void loop() {}
 ## Driver
 
 Independent SPI3 9-bit synchronous master (no dependency on the SPI2
-Flash library). SPI3 uses a software chip-select on PD8, SPI3 CLK on PD9
-and MOSI0 on PD11; reads are not required. PD14 backlight active low.
+Flash library). SPI3 uses **hardware SS0 on PD8**, SPI3 CLK on PD9,
+MISO0 on PD10, and MOSI0 on PD11. Reads are not needed for display writes.
+PD14 controls the active-low LCD backlight power.
 Source clock assumed HCLK = 22.1184 MHz; SPI3 configured to ~1 MHz.
 1 KB framebuffer; original 5x7 ASCII subset font, lower-case displayed
 as upper-case. `display()` sends all 8 pages.
@@ -74,9 +76,18 @@ The original experimental driver incorrectly left PD8 as a GPIO while toggling
 software CS. The corrected driver sets PD8..PD11 multi-function pins to SPI3,
 uses manual **SPI3 SSR bit0** for hardware CS (like Nuvoton's LCD.c), and
 replaces the speculative LCD init sequence with board reference commands
-`EB 81 A0 C0 AF`. The LCD controller's physical output remains to be
-retested. Use `LCD_Diagnostic`: all pixels on 3 seconds, blank 3 seconds,
+`EB 81 A0 C0 AF`. The v0.1.1 output was subsequently verified on physical hardware.
+Use `LCD_Diagnostic`: all pixels on 3 seconds, blank 3 seconds,
 text and border 3 seconds. `display()=OK` only checks SPI transfer timeout.
 
 Source cross-check:
 https://github.com/leoochenn/Embedded-System/blob/master/Library/Nu-LB-NUC140/Source/LCD.c
+
+## Final v0.1.1 hardware test result (2026-11-19)
+
+The user confirmed: **"LCD sudah tampil dan semua example sudah OK"**
+(the LCD now displays content and all examples pass). This covers
+`LCD_Hello`, `LCD_VR1_Gauge`, and `LCD_Diagnostic` on the
+Nu-LB-NUC140 V2.0 board. GPIO/UART/ADC/I2C1/SPI2 tests had passed in
+preceding sessions. Keep this board-specific implementation distinct
+from untested LCD controllers and SPI3 peripherals.

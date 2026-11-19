@@ -1,4 +1,4 @@
-name: NUC140 UART0 ARM compile smoke
+name: NUC140 UART0 and ADC ARM compile smoke
 on:
   pull_request:
     paths:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Compile NUC140 UART0 Serial on ARM Cortex-M0
+      - name: Compile UART0 and ADC analogRead on ARM Cortex-M0
         shell: bash
         run: |
           set -euxo pipefail
@@ -28,4 +28,6 @@ jobs:
           clang $OPT -std=gnu11 -I"$CORE" -I"$VARIANT" -c "$CORE/wiring.c" -o /tmp/nuc140-uart-test/wiring.o
           # Arduino IDE injects Arduino.h in the preprocessed sketch.
           clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -include "$CORE/Arduino.h" -x c++ -c hardware/nuc140/libraries/Nuc140Examples/examples/SerialHello/SerialHello.ino -o /tmp/nuc140-uart-test/sketch.o
-          echo "PASS: Serial API + NUC140 ARM Cortex-M0 compile"
+          clang $OPT -std=gnu11 -I"$CORE" -I"$VARIANT" -c "$CORE/wiring_analog.c" -o /tmp/nuc140-uart-test/wiring_analog.o
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -include "$CORE/Arduino.h" -x c++ -c hardware/nuc140/libraries/Nuc140Examples/examples/ADC_VR1_Serial/ADC_VR1_Serial.ino -o /tmp/nuc140-uart-test/adc_sketch.o
+          echo "PASS: UART0 + ADC analogRead NUC140 ARM Cortex-M0 compile"

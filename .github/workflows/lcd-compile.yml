@@ -1,0 +1,32 @@
+name: NUC140 LCD12864 SPI3 ARM compile
+on:
+  push:
+    branches: ["feature/lcd12864-spi3"]
+  pull_request:
+    paths:
+      - "hardware/nuc140/**"
+      - ".github/workflows/lcd-compile.yml"
+permissions:
+  contents: read
+jobs:
+  lcd-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cross-compile LCD SPI3 and examples on Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          command -v clang++
+          mkdir -p /tmp/nuc140-lcd
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          LCD=hardware/nuc140/libraries/NUC140LCD
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          CXX="-std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics"
+          clang++ $OPT $CXX -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -I"$LCD/src" -c "$LCD/src/NUC140LCD.cpp" -o /tmp/nuc140-lcd/NUC140LCD.o
+          for example in "$LCD"/examples/*/*.ino; do
+            name=$(basename "$example" .ino)
+            clang++ $OPT $CXX -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -I"$LCD/src" -include "$CORE/Arduino.h" -x c++ -c "$example" -o "/tmp/nuc140-lcd/$name.o"
+          done
+          echo "PASS: NUC140LCD SPI3 9-bit, LCD_Hello and LCD_VR1_Gauge"

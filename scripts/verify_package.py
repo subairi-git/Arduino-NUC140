@@ -26,6 +26,18 @@ assert archive_root == f"nuc140-{platform['version']}", "Wrong archive root fold
 assert f"{archive_root}/boards.txt" in paths, "Missing boards.txt"
 assert f"{archive_root}/platform.txt" in paths, "Missing platform.txt"
 assert f"{archive_root}/cores/arduino/Arduino.h" in paths, "Missing Arduino core header"
+assert f"{archive_root}/cores/arduino/wiring_pwm.c" in paths, "Missing analogWrite hardware PWM implementation"
+assert f"{archive_root}/cores/arduino/wiring_analog.c" in paths, "Missing ADC implementation"
+required_libraries = {
+    "Wire": ["src/Wire.h", "src/Wire.cpp"],
+    "SPI": ["src/SPI.h", "src/SPI.cpp"],
+    "NUC140LCD": ["src/NUC140LCD.h", "src/NUC140LCD.cpp"],
+    "NUC140RTC": ["src/NUC140RTC.h", "src/NUC140RTC.cpp"],
+    "NUC140PWM": ["src/NUC140PWM.h", "examples/RGB_Fade/RGB_Fade.ino"],
+}
+for library, components in required_libraries.items():
+    for component in components:
+        assert f"{archive_root}/libraries/{library}/{component}" in paths, f"Missing {library}/{component}"
 assert f"{archive_root}/variants/nuc140v2/flash.ld" in paths, "Missing linker script"
 assert f"{archive_root}/tools/nulink-upload.ps1" in paths, "Missing Nu-Link uploader"
 with tarfile.open(archive, "r:gz") as t:
@@ -33,7 +45,7 @@ with tarfile.open(archive, "r:gz") as t:
     ptxt = t.extractfile(members[f"{archive_root}/platform.txt"]).read().decode("utf-8")
     uploader = t.extractfile(members[f"{archive_root}/tools/nulink-upload.ps1"]).read().decode("utf-8")
     cv = t.extractfile(members[f"{archive_root}/cores/arduino/core_version.h"]).read().decode("utf-8")
-assert "0.1.3-experimental" in cv
+assert f"{platform['version']}-experimental" in cv, "Core header/version mismatch"
 assert "Invoke-NuLink -Arguments @('-l')" not in uploader, "Old NuLink listing blocker remains"
 assert "Invoke-NuLink -Arguments @('-p')" in uploader, "Missing device identity check"
 assert "recipe.size.regex=" in ptxt and "recipe.size.regex.data=" in ptxt

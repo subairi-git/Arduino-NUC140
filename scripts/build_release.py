@@ -6,6 +6,7 @@ Version follows GitHub tag GITHUB_REF_NAME, or defaults to v0.1.4 locally.
 """
 from pathlib import Path
 import hashlib
+import gzip
 import json
 import os
 import re
@@ -32,11 +33,20 @@ archive = dist / archive_name
 archive_root = f"nuc140-{version}"
 
 # Every file goes inside one top-level folder (required by Arduino Board Manager).
-with tarfile.open(archive, "w:gz") as tar:
-    for file in sorted(source.rglob("*")):
-        if file.is_file():
-            inner = file.relative_to(source).as_posix()
-            tar.add(file, arcname=f"{archive_root}/{inner}")
+# Normalize archive member metadata and gzip timestamp: reproducible SHA256 even
+# across a new GitHub Actions checkout, so published index can be regenerated.
+with archive.open("wb") as output:
+    with gzip.GzipFile(filename="", fileobj=output, mode="wb", mtime=0) as compressed:
+        with tarfile.open(fileobj=compressed, mode="w|") as tar:
+            for file in sorted(source.rglob("*")):
+                if file.is_file():
+                    inner = file.relative_to(source).as_posix()
+                    member = tar.gettarinfo(str(file), arcname=f"{archive_root}/{inner}")
+                    member.uid = member.gid = 0
+                    member.uname = member.gname = ""
+                    member.mtime = 0
+                    with file.open("rb") as fd:
+                        tar.addfile(member, fd)
 
 blob = archive.read_bytes()
 platform = {

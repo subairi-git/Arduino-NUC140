@@ -1,0 +1,67 @@
+name: NUC140 GPIO interrupt and hardware timer compile
+on:
+  push:
+    branches: ["feature/gpio-interrupt-timers"]
+  pull_request:
+    paths:
+      - "hardware/nuc140/cores/arduino/startup.c"
+      - "hardware/nuc140/cores/arduino/Arduino.h"
+      - "hardware/nuc140/cores/arduino/wiring_interrupts.c"
+      - "hardware/nuc140/cores/arduino/wiring_timer.c"
+      - "hardware/nuc140/libraries/**/examples/**"
+      - ".github/workflows/gpio-timer-compile.yml"
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ARM Cortex-M0 IRQ vector and timer driver smoke compilation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          ROOT=hardware/nuc140/libraries
+          mkdir -p /tmp/nuc140-int-timer
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          for p in startup wiring_interrupts wiring_timer; do
+            clang $OPT -std=gnu11 -Wall -Wextra -Werror \
+              -I"$CORE" -I"$VARIANT" -c "$CORE/$p.c" -o "/tmp/nuc140-int-timer/$p.o"
+          done
+          for sample in \
+            "$ROOT/Nuc140Examples/examples/GPIO_SWINT_Interrupt/GPIO_SWINT_Interrupt.ino" \
+            "$ROOT/Nuc140Examples/examples/TIMER0_Blink/TIMER0_Blink.ino" \
+            "$ROOT/NUC140LCD/examples/LCD_Interrupt_Timer/LCD_Interrupt_Timer.ino"; do
+            n="$(basename "$sample" .ino)"
+            clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti \
+              -fno-threadsafe-statics -Wall -Wextra -Werror \
+              -I"$CORE" -I"$VARIANT" -I"$ROOT/NUC140LCD/src" \
+              -include "$CORE/Arduino.h" -x c++ \
+              -c "$sample" -o "/tmp/nuc140-int-timer/$n.o"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('hardware/nuc140/cores/arduino/startup.c').read_text()
+          section=s.split('const uintptr_t vectors[] = {',1)[1].split('};',1)[0]
+          import re
+          # Exclude comments and count top-level vector initializers.
+          section=re.sub(r'//[^\n]*','',section)
+          section=re.sub(r'/\*.*?\*/','',section,flags=re.S)
+          elements=[x.strip() for x in section.split(',') if x.strip()]
+          assert len(elements)==48, f'Expected 48 vector slots, got {len(elements)}'
+          for irq, handler in {4:'GPAB_IRQHandler',5:'GPCDEF_IRQHandler',8:'TMR0_IRQHandler',
+                               9:'TMR1_IRQHandler',10:'TMR2_IRQHandler',11:'TMR3_IRQHandler'}.items():
+              assert handler in elements[16+irq], f'IRQ{irq} vector mismatch'
+          print('PASS: 48 vectors, IRQ4/5 and IRQ8..11 correctly mapped')
+          PY
+      - name: Build offline Windows preview patch bundle
+        run: python3 scripts/build_gpio_timer_preview.py
+      - name: Upload Windows install-and-rollback patch
+        uses: actions/upload-artifact@v4
+        with:
+          name: NUC140-GPIO-Interrupt-Timer-Preview-v0.1.5
+          path: dist/NUC140-GPIO-Interrupt-Timer-Preview-v0.1.5.zip
+          if-no-files-found: error
+          retention-days: 30

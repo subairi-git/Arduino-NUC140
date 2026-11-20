@@ -11,6 +11,11 @@ extern "C" {
 #define INPUT 0
 #define OUTPUT 1
 #define INPUT_PULLUP 2
+// Standard Arduino GPIO edge interrupt modes.
+#define CHANGE 1
+#define FALLING 2
+#define RISING 3
+#define digitalPinToInterrupt(pin) (pin)
 #define PA(n) (n)
 #define PB(n) (16 + (n))
 #define PC(n) (32 + (n))
@@ -28,6 +33,19 @@ void analogWrite(uint32_t pin, int value);
 // NUC140 ADC: PA0..PA7 are channels 0..7 (12-bit, 0..4095).
 // Returns -1 for unsupported pin or conversion timeout.
 int analogRead(uint32_t pin);
+// NUC140 hardware GPIO interrupts for PA0..PE15.
+// The pin must already be configured as a GPIO input, e.g. INPUT_PULLUP.
+// Called callbacks execute in interrupt context; do not print or delay there.
+typedef void (*NUC140InterruptCallback)(void);
+void attachInterrupt(uint32_t interruptNum, NUC140InterruptCallback callback, int mode);
+void detachInterrupt(uint32_t interruptNum);
+// NUC140 hardware TIMER0..TIMER3, periodic. Time is in microseconds.
+// timerBegin returns false if the timer index or period is unsupported,
+// if callback is null, or if the HIRC clock fails to stabilize.
+bool timerBegin(uint8_t timerIndex, uint32_t periodUs, NUC140InterruptCallback callback);
+void timerEnd(uint8_t timerIndex);
+void timerStart(uint8_t timerIndex);
+void timerStop(uint8_t timerIndex);
 void delay(uint32_t ms);
 uint32_t millis(void);
 void delayMicroseconds(uint32_t us);

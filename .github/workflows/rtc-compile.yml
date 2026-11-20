@@ -1,0 +1,32 @@
+name: NUC140 internal RTC ARM compile smoke
+on:
+  push:
+    branches: ["feature/rtc-internal"]
+  pull_request:
+    paths:
+      - "hardware/nuc140/libraries/NUC140RTC/**"
+      - ".github/workflows/rtc-compile.yml"
+permissions:
+  contents: read
+jobs:
+  rtc-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile NUC140RTC library and three example sketches for Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/nuc140-rtc-test
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          RTC=hardware/nuc140/libraries/NUC140RTC
+          LCD=hardware/nuc140/libraries/NUC140LCD
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding"
+          CXX="-std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -Wall -Wextra -Werror"
+          clang++ $OPT $CXX -I"$CORE" -I"$VARIANT" -I"$RTC/src" -c "$RTC/src/NUC140RTC.cpp" -o /tmp/nuc140-rtc-test/NUC140RTC.o
+          for example in "$RTC"/examples/*/*.ino; do
+            name=$(basename "$example" .ino)
+            clang++ $OPT $CXX -I"$CORE" -I"$VARIANT" -I"$RTC/src" -I"$LCD/src" -include "$CORE/Arduino.h" -x c++ -c "$example" -o "/tmp/nuc140-rtc-test/$name.o"
+          done
+          echo "PASS: internal RTC library, Serial clock, Set-once, LCD clock"

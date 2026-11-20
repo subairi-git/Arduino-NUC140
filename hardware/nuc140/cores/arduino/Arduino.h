@@ -23,6 +23,8 @@ void init(void);
 void pinMode(uint32_t pin, uint32_t mode);
 void digitalWrite(uint32_t pin, uint32_t value);
 int digitalRead(uint32_t pin);
+// Hardware PWM0..PWM3 on PA12..PA15: 0=LOW, 255=HIGH.
+void analogWrite(uint32_t pin, int value);
 // NUC140 ADC: PA0..PA7 are channels 0..7 (12-bit, 0..4095).
 // Returns -1 for unsupported pin or conversion timeout.
 int analogRead(uint32_t pin);

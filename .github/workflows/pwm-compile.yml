@@ -1,0 +1,32 @@
+name: NUC140 PWM RGB ARM compile smoke
+on:
+  push:
+    branches: ["feature/pwm-rgb"]
+  pull_request:
+    paths:
+      - "hardware/nuc140/cores/arduino/Arduino.h"
+      - "hardware/nuc140/cores/arduino/wiring_pwm.c"
+      - "hardware/nuc140/libraries/NUC140PWM/**"
+      - ".github/workflows/pwm-compile.yml"
+permissions:
+  contents: read
+jobs:
+  pwm-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cross-compile NUC140 PWM core and RGB examples for Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/nuc140-pwm-test
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          PWM=hardware/nuc140/libraries/NUC140PWM
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          clang $OPT -std=gnu11 -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -c "$CORE/wiring_pwm.c" -o /tmp/nuc140-pwm-test/wiring_pwm.o
+          for example in "$PWM"/examples/*/*.ino; do
+            name=$(basename "$example" .ino)
+            clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -I"$PWM/src" -include "$CORE/Arduino.h" -x c++ -c "$example" -o "/tmp/nuc140-pwm-test/$name.o"
+          done
+          echo "PASS: analogWrite 8-bit hardware PWM and 3 RGB examples"

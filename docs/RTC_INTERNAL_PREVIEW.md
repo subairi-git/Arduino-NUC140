@@ -4,7 +4,7 @@ Arduino-style library for NUC140VE3CN on-chip RTC, using a 32.768 kHz low speed 
 
 ## Status
 - Peripheral register implementation based on Nuvoton NUC100BSP (rtc.h, rtc.c, NUC100Series.h).
-- ARM Cortex-M0 cross-compilation tested; **hardware RTC still needs user validation**.
+- ARM Cortex-M0 cross-compilation tested; **hardware RTC read/display and setting confirmed by user**. MCU reset retention and backup battery operation are not yet verified.
 - RTC clock initialization and calendar/time setting, 24-hour mode, 2000–2099, weekday 0..6.
 - begin() enables LXT and RTC clock, checks crystal status (up to 5 seconds), initializes only if not already active; preserves existing time on MCU reset if RTC remains powered.
 - setDateTime explicit; getDateTime attempts a consistent read across second rollover and validates BCD.
@@ -44,3 +44,12 @@ Run INSTALL-RTC.cmd from a completely extracted ZIP. Only the libraries/NUC140RT
 
 - https://github.com/OpenNuvoton/NUC100BSP
 - https://www.nuvoton.com/resource-files/UM_Nu-LB-NUC140_EN_Rev2.0.pdf
+
+## Hardware test results (2026-11-20)
+
+On the user's Nu-LB-NUC140 V2.0 board:
+- RTC operation and display on the onboard LCD using `RTC_LCD_Clock`: **PASS** (user confirmation: RTC sudah OK).
+- RTC time setting using `RTC_Serial_Clock` command produced `RTC SET OK`: **PASS** (user confirmation: set OK sudah bisa).
+- Retention after pressing MCU RESET, precision/drift, alarms, and battery-backed operation across power loss: **not yet tested**.
+
+The library remains a preview until additional edge cases have been tested, but the core RTC read and set functions are now hardware verified.

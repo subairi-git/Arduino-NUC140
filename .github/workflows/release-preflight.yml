@@ -20,13 +20,13 @@ jobs:
           python-version: "3.11"
       - name: Build reproducible v0.1.4 Boards Manager package
         env:
-          GITHUB_REF_NAME: v0.1.4
+          NUC140_RELEASE_REF: v0.1.4
         run: python scripts/build_release.py
       - name: Verify archive, versions, APIs and SHA256
         run: python scripts/verify_package.py
       - name: Verify reproducible archive hashing
         env:
-          GITHUB_REF_NAME: v0.1.4
+          NUC140_RELEASE_REF: v0.1.4
         shell: bash
         run: |
           set -euo pipefail

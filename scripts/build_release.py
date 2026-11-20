@@ -13,7 +13,7 @@ import re
 import tarfile
 
 root = Path(__file__).resolve().parent.parent
-ref_name = os.environ.get("GITHUB_REF_NAME", "v0.1.4")
+ref_name = os.environ.get("NUC140_RELEASE_REF") or os.environ.get("GITHUB_REF_NAME", "v0.1.4")
 if not re.fullmatch(r"v?\d+\.\d+\.\d+", ref_name):
     raise ValueError(f"Expected tag vMAJOR.MINOR.PATCH, got: {ref_name!r}")
 version = ref_name.removeprefix("v")

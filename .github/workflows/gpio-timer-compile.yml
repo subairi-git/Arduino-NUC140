@@ -56,3 +56,12 @@ jobs:
               assert handler in elements[16+irq], f'IRQ{irq} vector mismatch'
           print('PASS: 48 vectors, IRQ4/5 and IRQ8..11 correctly mapped')
           PY
+      - name: Build offline Windows preview patch bundle
+        run: python3 scripts/build_gpio_timer_preview.py
+      - name: Upload Windows install-and-rollback patch
+        uses: actions/upload-artifact@v4
+        with:
+          name: NUC140-GPIO-Interrupt-Timer-Preview-v0.1.5
+          path: dist/NUC140-GPIO-Interrupt-Timer-Preview-v0.1.5.zip
+          if-no-files-found: error
+          retention-days: 30

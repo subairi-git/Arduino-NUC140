@@ -1,8 +1,6 @@
 # Arduino analogWrite() hardware PWM for NUC140VE3CN
 
-**Status: Preview v0.1.1, hardware retest pending.** NUC140 PWM0..PWM3 output, intended first hardware test
-with the Nu-LB-NUC140 V2.0 RGB LED. ARM Cortex-M0 Clang compile passed, physical PWM
-response pending user test.
+**Status: v0.1.1 user-confirmed hardware PASS for onboard RGB PWM0–PWM2 (2026-11-20).** ARM Cortex-M0 Clang compile also passed. PA15/PWM3, advanced frequencies, and non-RGB peripherals remain untested.
 
 ## Pin map and polarity
 
@@ -92,3 +90,21 @@ A continued PWM_SYNC=0xFFFF result alone is not evidence of failure;
 verify the actual wave/dimming and CNR/CMR/POE readback. This is **not
 hardware PASS** until user confirms. Existing UART, ADC, I2C, SPI,
 LCD and RTC source files are unchanged.
+
+## v0.1.1 RGB hardware retest PASS (2026-11-20)
+
+The user reported **"RGB sudah OK"** after installing the v0.1.1 fix, and supplied this PWM2/PA14 diagnostic at `analogWrite(PA(14), 128)`:
+
+| Register | Actual | Validation |
+|---|---|---|
+| GPA_MFP | `0x00004000` | PA14 alternate function bit14 set |
+| APBCLK | `0x00310001` | PWMA clock bits20/21 enabled |
+| PWM_PPR | `0x00000101` | Pair prescalers configured |
+| PWM_CSR | `0x00000000` | Clock divisor /2 |
+| PWM_PCR | `0x00090000` | PWM2 channel enable bit16, auto-reload bit19 |
+| PWM_POE | `0x00000004` | PWM2 output enable bit2 |
+| PWM_CNR | `0x00001599` | 5529-period register |
+| PWM_CMR | `0x00000AD7` | 2775 comparator (~50% duty) |
+| PWM_SYNC | `0x0000FFFF` | Still unchanged from initial diagnostic; not a blocker after v0.1.1 correction |
+
+This confirms hardware PWM2 register configuration and user-visible working RGB PWM. RGB PWM0/PWM1 are accepted based on the user's overall RGB PASS report; separate channel register dumps were not supplied. PR is ready for review. No merge or Boards Manager release in this step. The earlier failed v0.1.0 test is retained above as the regression history.

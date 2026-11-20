@@ -23,10 +23,14 @@ void init(void);
 void pinMode(uint32_t pin, uint32_t mode);
 void digitalWrite(uint32_t pin, uint32_t value);
 int digitalRead(uint32_t pin);
+// NUC140 ADC: PA0..PA7 are channels 0..7 (12-bit, 0..4095).
+// Returns -1 for unsupported pin or conversion timeout.
+int analogRead(uint32_t pin);
 void delay(uint32_t ms);
 uint32_t millis(void);
 void delayMicroseconds(uint32_t us);
 void yield(void);
 #ifdef __cplusplus
 }
+#include "HardwareSerial.h"
 #endif

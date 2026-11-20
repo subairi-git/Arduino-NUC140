@@ -1,0 +1,63 @@
+name: NUC140 v0.1.4 release preflight
+on:
+  push:
+    branches: ["release/v0.1.4"]
+  pull_request:
+    paths:
+      - "scripts/build_release.py"
+      - "scripts/verify_package.py"
+      - "hardware/nuc140/**"
+      - ".github/workflows/release-preflight.yml"
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build reproducible v0.1.4 Boards Manager package
+        env:
+          GITHUB_REF_NAME: v0.1.4
+        run: python scripts/build_release.py
+      - name: Verify archive, versions, APIs and SHA256
+        run: python scripts/verify_package.py
+      - name: Verify reproducible archive hashing
+        env:
+          GITHUB_REF_NAME: v0.1.4
+        shell: bash
+        run: |
+          set -euo pipefail
+          FIRST="$(sha256sum dist/nuc140-0.1.4.tar.gz | cut -d' ' -f1)"
+          python scripts/build_release.py
+          SECOND="$(sha256sum dist/nuc140-0.1.4.tar.gz | cut -d' ' -f1)"
+          test "$FIRST" = "$SECOND"
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile integrated core and example source on ARM Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          ROOT=hardware/nuc140/libraries
+          mkdir -p /tmp/nuc140-release-compile
+          COMMON="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          CXX="-std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -Wall -Wextra -Werror"
+          for file in "$CORE"/wiring.c "$CORE"/wiring_analog.c "$CORE"/wiring_pwm.c; do
+            name="$(basename "$file" .c)"
+            clang $COMMON -std=gnu11 -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -c "$file" -o "/tmp/nuc140-release-compile/$name.o"
+          done
+          for file in "$ROOT"/Wire/src/Wire.cpp "$ROOT"/SPI/src/SPI.cpp "$ROOT"/NUC140LCD/src/NUC140LCD.cpp "$ROOT"/NUC140RTC/src/NUC140RTC.cpp; do
+            name="$(basename "$file" .cpp)"
+            clang++ $COMMON $CXX -I"$CORE" -I"$VARIANT" -I"$ROOT"/Wire/src -I"$ROOT"/SPI/src -I"$ROOT"/NUC140LCD/src -I"$ROOT"/NUC140RTC/src -c "$file" -o "/tmp/nuc140-release-compile/$name.o"
+          done
+          for file in "$ROOT"/NUC140PWM/examples/*/*.ino "$ROOT"/NUC140LCD/examples/*/*.ino "$ROOT"/NUC140RTC/examples/*/*.ino; do
+            name="$(basename "$file" .ino)"
+            clang++ $COMMON $CXX -I"$CORE" -I"$VARIANT" -I"$ROOT"/Wire/src -I"$ROOT"/SPI/src -I"$ROOT"/NUC140LCD/src -I"$ROOT"/NUC140RTC/src -I"$ROOT"/NUC140PWM/src -include "$CORE/Arduino.h" -x c++ -c "$file" -o "/tmp/nuc140-release-compile/$name.o"
+          done
+          echo "PASS: ARM Cortex-M0 I/O drivers and onboard LCD, RTC, PWM examples"

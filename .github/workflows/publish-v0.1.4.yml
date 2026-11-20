@@ -31,7 +31,7 @@ jobs:
           test -f RELEASE_NOTES-v0.1.4.md
       - name: Create reproducible archive and Boards Manager index
         env:
-          GITHUB_REF_NAME: v0.1.4
+          NUC140_RELEASE_REF: v0.1.4
         run: python scripts/build_release.py
       - name: Validate archive content, checksum and versions
         run: python scripts/verify_package.py

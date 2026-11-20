@@ -52,3 +52,11 @@ users should report unexpected color ordering for the exact board variant.
 
 - https://www.nuvoton.com/resource-files/UM_Nu-LB-NUC140_EN_Rev2.0.pdf
 - https://github.com/OpenNuvoton/NUC100BSP
+
+## Reported hardware issue and diagnostic (2026-11-20)
+
+The user reports: **"led hanya nyala merah tidak redup"** (only the red LED lights, with no fading). Therefore **do not label PWM hardware PASS**. The earlier v0.1.0 preview compiled on ARM but has not produced working PWM on the physical board.
+
+A new `RGB_Diagnostic` example first tests GPIO ON/OFF on PA14 (RED), PA13 (GREEN) and PA12 (BLUE) independently, then applies `analogWrite(pin, 0/64/128/192/255)` to each channel and dumps CLK, GPIO alternate-function, PWM PPR/CSR/PCR/POE/CNR/CMR/SYNC registers at PWM=128. The GPIO stage distinguishes an RGB wiring/IO problem from PWM timer/mux setup. `Serial.print` register values alone do not validate physical PWM; observe the LED.
+
+Compiled for ARM Cortex-M0; physical diagnostic results pending. Keep PR as draft until RGB Fade passes. **Do not merge** with earlier tested peripherals as a verified PWM release.

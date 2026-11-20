@@ -25,18 +25,22 @@
 #define PWM_POE        (PWM_A_BASE + 0x7CUL)
 #define PWM_CNR(ch)    (PWM_A_BASE + 0x0CUL + 12UL*(ch))
 #define PWM_CMR(ch)    (PWM_A_BASE + 0x10UL + 12UL*(ch))
-#define PWM_SYNC(ch)   (PWM_A_BASE + 0x88UL + 4UL*(ch))
 #define PWM_PERIOD_TICKS 5530UL
-#define PWM_WAIT_LIMIT 100000UL
 
 static uint8_t pwm_initialized;
 static uint8_t pwm_channel_initialized[4];
 
-static int pwm_wait(uint32_t ch) {
-  uint32_t timeout = PWM_WAIT_LIMIT;
-  while ((PWM_REG32(PWM_SYNC(ch)) & 1UL) && timeout) --timeout;
-  return timeout != 0UL;
-}
+/*
+ * NUC140VE3CN board feedback (2026-11-20): SYNCBUSY read returned
+ * 0x0000FFFF with PWM registers freshly enabled. v0.1.0 interpreted bit0
+ * as permanently busy and returned early BEFORE setting CNR/CMR/POE/MFP,
+ * so analogWrite(1..254) could never generate hardware PWM.
+ *
+ * The Nuvoton StdDriver PWM_ConfigOutputChannel()/PWM_Start() program
+ * PPR, CSR, PCR, CNR, CMR and POE directly without checking SYNCBUSY.
+ * This preview therefore does not gate initialization/updates on that
+ * diagnostic register. Hardware output is yet to be re-verified.
+ */
 
 static int pwm_unlock(void) {
   PWM_REG32(PWM_PROTECT)=0x59UL;
@@ -61,9 +65,6 @@ static int pwm_init(void) {
   // Does not alter unrelated dead-zone bits in high half of PPR.
   PWM_REG32(PWM_PPR) = (PWM_REG32(PWM_PPR) & ~0xFFFFUL) | 0x0101UL;
   PWM_REG32(PWM_CSR) &= ~0x7777UL;
-  for (uint32_t ch=0; ch<4UL; ch++) {
-    if (!pwm_wait(ch)) return 0;
-  }
   pwm_initialized=1U;
   return 1;
 }
@@ -112,14 +113,11 @@ void analogWrite(uint32_t pin, int value) {
     PWM_REG32(PWM_PCR) = (PWM_REG32(PWM_PCR) &
       ~((7UL<<(shift+1)) | (1UL<<(30UL + (ch/2UL))))) |
       (1UL<<(shift+3UL));
-    if (!pwm_wait(ch)) return;
     PWM_REG32(PWM_CNR(ch))=PWM_PERIOD_TICKS - 1UL;
-    if (!pwm_wait(ch)) return;
     pwm_channel_initialized[ch]=1U;
   }
   const uint32_t ticks = ((uint32_t)value * PWM_PERIOD_TICKS + 127UL)/255UL;
   PWM_REG32(PWM_CMR(ch))=ticks-1UL;
-  if (!pwm_wait(ch)) return;
   PWM_REG32(PWM_POE) |= mask;
   PWM_REG32(PWM_PCR) |= (1UL<<shift);
   pwm_pin_mux(ch,1);

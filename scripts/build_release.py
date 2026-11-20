@@ -2,7 +2,7 @@
 """Build an Arduino Boards Manager platform archive and its package index.
 
 Arduino requires EXACTLY one top-level directory inside platform archives.
-Version follows GitHub tag GITHUB_REF_NAME, or defaults to v0.1.3 locally.
+Version follows GitHub tag GITHUB_REF_NAME, or defaults to v0.1.4 locally.
 """
 from pathlib import Path
 import hashlib
@@ -12,7 +12,7 @@ import re
 import tarfile
 
 root = Path(__file__).resolve().parent.parent
-ref_name = os.environ.get("GITHUB_REF_NAME", "v0.1.3")
+ref_name = os.environ.get("GITHUB_REF_NAME", "v0.1.4")
 if not re.fullmatch(r"v?\d+\.\d+\.\d+", ref_name):
     raise ValueError(f"Expected tag vMAJOR.MINOR.PATCH, got: {ref_name!r}")
 version = ref_name.removeprefix("v")
@@ -21,6 +21,9 @@ repo = os.environ.get("GITHUB_REPOSITORY", "subairi-git/Arduino-NUC140")
 source = root / "hardware" / "nuc140"
 if not (source / "boards.txt").is_file() or not (source / "platform.txt").is_file():
     raise FileNotFoundError("hardware/nuc140 must contain boards.txt and platform.txt")
+
+if f"version={version}" not in (source / "platform.txt").read_text(encoding="utf-8").splitlines():
+    raise ValueError("Tag release version must match hardware/nuc140/platform.txt")
 
 dist = root / "dist"
 dist.mkdir(exist_ok=True)

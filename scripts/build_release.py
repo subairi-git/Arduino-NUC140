@@ -2,17 +2,18 @@
 """Build an Arduino Boards Manager platform archive and its package index.
 
 Arduino requires EXACTLY one top-level directory inside platform archives.
-Version follows GitHub tag GITHUB_REF_NAME, or defaults to v0.1.3 locally.
+Version follows GitHub tag GITHUB_REF_NAME, or defaults to v0.1.4 locally.
 """
 from pathlib import Path
 import hashlib
+import gzip
 import json
 import os
 import re
 import tarfile
 
 root = Path(__file__).resolve().parent.parent
-ref_name = os.environ.get("GITHUB_REF_NAME", "v0.1.3")
+ref_name = os.environ.get("NUC140_RELEASE_REF") or os.environ.get("GITHUB_REF_NAME", "v0.1.4")
 if not re.fullmatch(r"v?\d+\.\d+\.\d+", ref_name):
     raise ValueError(f"Expected tag vMAJOR.MINOR.PATCH, got: {ref_name!r}")
 version = ref_name.removeprefix("v")
@@ -22,6 +23,9 @@ source = root / "hardware" / "nuc140"
 if not (source / "boards.txt").is_file() or not (source / "platform.txt").is_file():
     raise FileNotFoundError("hardware/nuc140 must contain boards.txt and platform.txt")
 
+if f"version={version}" not in (source / "platform.txt").read_text(encoding="utf-8").splitlines():
+    raise ValueError("Tag release version must match hardware/nuc140/platform.txt")
+
 dist = root / "dist"
 dist.mkdir(exist_ok=True)
 archive_name = f"nuc140-{version}.tar.gz"
@@ -29,11 +33,20 @@ archive = dist / archive_name
 archive_root = f"nuc140-{version}"
 
 # Every file goes inside one top-level folder (required by Arduino Board Manager).
-with tarfile.open(archive, "w:gz") as tar:
-    for file in sorted(source.rglob("*")):
-        if file.is_file():
-            inner = file.relative_to(source).as_posix()
-            tar.add(file, arcname=f"{archive_root}/{inner}")
+# Normalize archive member metadata and gzip timestamp: reproducible SHA256 even
+# across a new GitHub Actions checkout, so published index can be regenerated.
+with archive.open("wb") as output:
+    with gzip.GzipFile(filename="", fileobj=output, mode="wb", mtime=0) as compressed:
+        with tarfile.open(fileobj=compressed, mode="w|") as tar:
+            for file in sorted(source.rglob("*")):
+                if file.is_file():
+                    inner = file.relative_to(source).as_posix()
+                    member = tar.gettarinfo(str(file), arcname=f"{archive_root}/{inner}")
+                    member.uid = member.gid = 0
+                    member.uname = member.gname = ""
+                    member.mtime = 0
+                    with file.open("rb") as fd:
+                        tar.addfile(member, fd)
 
 blob = archive.read_bytes()
 platform = {

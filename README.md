@@ -1,64 +1,58 @@
-# Arduino NUC140 V2.0 – Experimental v0.1.3
+# Arduino NUC140 V2.0 — v0.1.4 experimental community core
 
-Unofficial Arduino core for **Nu-LB-NUC140 V2.0 (2014), NUC140VE3CN** (ARM Cortex-M0). The community has **successfully compiled, programmed and run LED Blink on one NUC140VE3CN board using Windows Nu-Link**. This does not establish compatibility with all boards or sketches; the core remains experimental.
+Unofficial Arduino-style platform for **Nu-LB-NUC140 V2.0 (NUC140VE3CN, ARM Cortex-M0)**, programmed with a **Nu-Link** probe on Windows. This release combines the tested core and peripheral libraries in a single Boards Manager installation.
 
-## What's new in v0.1.3
+## Install with Arduino Boards Manager
 
-- Permanent hotfix: the Windows uploader no longer blocks on `NuLink.exe -l`, which returned `Cannot list NuLink to file` (exit -4) on a tested PC. It still requires `NuLink.exe -p` to identify **NUC140VE3CN** before changing Flash.
-- Proper Arduino IDE Flash / static RAM size reporting via `recipe.size.regex` / `recipe.size.regex.data`. Includes vector table and initialized data in Flash; initialized and uninitialized static variables in RAM.
-- Aligns `platform.txt`, library, and `core_version.h` versions to 0.1.3.
-- Makes **Sketch → Export Compiled Binary** explicitly emit `.bin`.
-- Release index builder keeps older versions *only if they already exist in the repository's package index*; the newly published 0.1.3 is first.
+**Additional Boards Manager URL** (add to File > Preferences > Additional Boards Manager URLs):
 
-## Install / upgrade in Arduino IDE
+https://raw.githubusercontent.com/subairi-git/Arduino-NUC140/main/package_nuc140_index.json
 
-Board Manager URL (use this existing URL; do not change it):
+Then use **Tools > Board > Boards Manager**, search **NUC140**, and install **v0.1.4**. Select **Nu-LB-NUC140 V2.0 (NUC140VE3CN)** before verifying/uploading. The official Nuvoton **Nu-Link Command Tool** must be installed separately on Windows; it is not bundled. Do not copy the older manual v0.1.2 library patches over the integrated v0.1.4 package.
 
-`https://raw.githubusercontent.com/subairi-git/Arduino-NUC140/main/package_nuc140_index.json`
+## Integrated APIs
 
-1. Update the source repository and push tag `v0.1.3` (see `RELEASE-0.1.3-WINDOWS.md`). GitHub Actions builds the `.tar.gz`, publishes the GitHub Release, and updates `package_nuc140_index.json`.
-2. In Arduino IDE → **Tools → Board → Boards Manager**, find **NUC140**, choose **0.1.3**, and update.
-3. Choose **Nu-LB-NUC140 V2.0 (NUC140VE3CN)**, open **File → Examples → Nuc140Examples → BlinkOnboard**, then **Verify** and **Upload**.
+| Arduino API / Library | Board-specific mapping | Physical test |
+| --- | --- | --- |
+| pinMode, digitalWrite, digitalRead | PA/PB/PC/PD/PE macros; onboard PC12 LED active LOW | PASS |
+| Serial (UART0) | PB0 TX, PB1 RX, 115200 baud | PASS |
+| analogRead | PA0..PA7 12-bit, VR1 on PA7 | PASS on PA7 |
+| Wire | I2C1: PA10 SDA, PA11 SCL; EEPROM 0x50 | PASS |
+| SPI | SPI2: PD0 CS, PD1 CLK, PD2 MISO0, PD3 MOSI0 | PASS, JEDEC read |
+| NUC140LCD | SPI3 9-bit, PD8–PD11, PD14 backlight; 128x64 | PASS |
+| NUC140RTC | Internal RTC with board 32.768-kHz crystal | PASS for read/set |
+| analogWrite / NUC140PWM | PA12 PWM0 blue, PA13 PWM1 green, PA14 PWM2 red | PASS for RGB |
 
-## Upload with Nu-Link (Windows, SWD; no COM port)
+Example sketches ship under their relevant library folders (for example, NUC140PWM > RGB_Fade, NUC140RTC > RTC_Serial_Clock, NUC140LCD > LCD_Hello).
 
-Install Nuvoton's official **Nu-Link Command Tool** separately. This repo does not bundle NuLink.exe or its USB driver. Close any ICP or debugger application before upload, and attach exactly **one** Nu-Link.
+### Example: standard Arduino PWM
 
-Uploader checks the firmware size (8..131072 bytes) and plausible Cortex-M0 stack/reset vectors. Then it locates NuLink.exe, runs `NuLink.exe -p`, and requires `NUC140VE3CN` in its response. Only after that check it runs:
-
-`NuLink -e APROM` → `NuLink -w APROM <firmware.bin>` → `NuLink -v APROM <firmware.bin>` → `NuLink -reset` → `NuLink -disconnect`.
-
-**WARNING:** Upload **replaces the current APROM application**. Back up existing firmware if needed. The uploader deliberately does not modify LDROM, DataFlash, or configuration bits, and does not use whole-chip erase. Do not use on a different MCU model. When several Nu-Link devices are connected, unplug extras because `-l` enumeration is intentionally omitted on affected Command Tool versions.
-
-The Nu-Link Command Tool was found on a tested Windows PC at:
-
-`C:\Program Files (x86)\Nuvoton Tools\NuLink Command Tool\NuLink.exe`
-
-If it is installed elsewhere, set Windows user environment variable `NUC140_NULINK_EXE` to the full file path, then restart Arduino IDE. You can check device identity without writing Flash using:
-
-```cmd
-"C:\Program Files (x86)\Nuvoton Tools\NuLink Command Tool\NuLink.exe" -p
+```cpp
+void setup() {}
+void loop() {
+  for (int value=0; value<=255; value+=5) {
+    analogWrite(PA(14), value); // Red LED active LOW: lower means brighter
+    delay(20);
+  }
+}
 ```
 
-### Build output / memory reporting
+For intuitive 0=off, 255=brightest RGB colors, use `#include <NUC140PWM.h>` and `rgbWrite(r,g,b)`.
 
-The size recipe uses ARM GNU `arm-none-eabi-size -A` and section-aware regexes. Flash use counts `.vectors`, `.text` (including `.rodata` in the current linker script), initializer arrays, `.ARM.exidx`, and the load image of `.data`. Static RAM counts `.data`, `.bss` and `.noinit`. This does **not** include worst-case stack or heap usage.
+## Programming via Nu-Link
 
-`Couldn't determine program size` should no longer occur when using the v0.1.3 `platform.txt`; actual Arduino IDE behaviour needs to be confirmed after updating.
+Uploading replaces the current **APROM program**, not all MCU memory. The Windows uploader validates the firmware and checks the connected device identity via `NuLink.exe -p` for **NUC140VE3CN** before erasing/programming/verifying APROM. Keep only one Nu-Link attached. The tool does not modify LDROM, DataFlash or configuration bits by design.
 
-### Existing experimental features and limitations
+If NuLink.exe cannot be located, set the user environment variable `NUC140_NULINK_EXE` to its full path (often `C:\Program Files (x86)\Nuvoton Tools\NuLink Command Tool\NuLink.exe`) and restart Arduino IDE.
 
-- GPIO numbering: `PA(0..15)=0..15`, `PB(0..15)=16..31`, `PC(0..15)=32..47`, `PD(0..15)=48..63`, `PE(0..15)=64..79`; `LED_BUILTIN=PC12=44`, active LOW.
-- `setup`, `loop`, `pinMode`, `digitalWrite`, `digitalRead`, `millis`, `delay`, approximate `delayMicroseconds` are present.
-- No compatible Arduino `Serial`, SPI, I2C, PWM, ADC or generic interrupt API yet; many Arduino libraries will not work.
-- Core assumes 22.1184 MHz HIRC CPU clock. Timing may be wrong if chip clock configuration differs.
-- Linker assumes 128 KB APROM / 16 KB SRAM for **NUC140VE3CN**. Verify the chip model before programming.
+## Important scope notes
 
-## References
+This is **experimental**. The physical tests described above were conducted on one Nu-LB-NUC140 V2.0 board, not across all pin mappings, chips or Arduino libraries. PWM3/PA15, SPI flash write/erase, complex concurrent I/O, and RTC backup operation after complete power loss have not been confirmed. Timing assumes HCLK 22.1184 MHz. For further details, see [Release notes v0.1.4](RELEASE_NOTES-v0.1.4.md) and [PWM notes](docs/PWM_RGB_PREVIEW.md).
 
-- Nu-Link Command Tool user manual: https://www.nuvoton.com/export/resource-files/UM_Nu-Link_Command_Tools_EN.pdf
-- NUC140 V2 manual: https://www.nuvoton.com/resource-files/UM_Nu-LB-NUC140_EN_Rev2.0.pdf
-- NUC100 BSP: https://github.com/OpenNuvoton/NUC100BSP
-- Arduino platform specifications: https://docs.arduino.cc/arduino-cli/platform-specification/
+## Sources and license
 
-MIT license for new core glue code; the proprietary NuLink.exe stays separately installed on Windows.
+- [NUC100 BSP / standard drivers](https://github.com/OpenNuvoton/NUC100BSP)
+- [Nu-LB-NUC140 board user manual](https://www.nuvoton.com/resource-files/UM_Nu-LB-NUC140_EN_Rev2.0.pdf)
+- [Arduino platform specification](https://docs.arduino.cc/arduino-cli/platform-specification/)
+
+New core glue code is under MIT license. Proprietary Nuvoton NuLink.exe and drivers are installed independently.

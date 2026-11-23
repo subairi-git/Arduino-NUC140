@@ -28,18 +28,30 @@ void setup() {
  noInterrupts();
  unlock();
  bool ok=(MMIO(WRPROT)&1)!=0;
- if(ok) {
-   MMIO(PWRCON)|=1UL;
-   MMIO(PLLCON)=0xC22EUL;
-   MMIO(CLKDIV)&=~(15UL<<4); // USB divider 1
-   MMIO(APBCLK)|=USB_CLK_EN;
- }
+ if(ok) MMIO(PWRCON)|=1UL;
  MMIO(WRPROT)=0;
  interrupts();
  if(!ok) {Serial.println("FAIL: register access");return;}
  uint32_t started=millis();
- while((MMIO(CLKSTATUS)&(HXT_READY|PLL_READY))!=(HXT_READY|PLL_READY)
-       && millis()-started<1500UL) {}
+ while(!(MMIO(CLKSTATUS)&HXT_READY) && millis()-started<1500UL) {}
+ if(!(MMIO(CLKSTATUS)&HXT_READY)) {
+   Serial.println("FAIL: HXT 12MHz oscillator not ready");
+   return;
+ }
+ // Activate USB PLL and APB module only after external crystal stabilizes.
+ noInterrupts();
+ unlock();
+ ok=(MMIO(WRPROT)&1)!=0;
+ if(ok) {
+   MMIO(PLLCON)=0xC22EUL;
+   MMIO(CLKDIV)&=~(15UL<<4); // USB clock divider /1
+   MMIO(APBCLK)|=USB_CLK_EN;
+ }
+ MMIO(WRPROT)=0;
+ interrupts();
+ if(!ok) {Serial.println("FAIL: PLL register access");return;}
+ started=millis();
+ while(!(MMIO(CLKSTATUS)&PLL_READY) && millis()-started<1500UL) {}
  hx("CLKSTATUS ",MMIO(CLKSTATUS));
  hx("APBCLK    ",MMIO(APBCLK));
  hx("CLKDIV   ",MMIO(CLKDIV));

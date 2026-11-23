@@ -50,4 +50,5 @@ void yield(void);
 #ifdef __cplusplus
 }
 #include "HardwareSerial.h"
+#include "USBSerial.h"
 #endif

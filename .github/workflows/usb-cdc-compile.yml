@@ -1,0 +1,28 @@
+name: NUC140 USB CDC ARM compile smoke
+on:
+  pull_request:
+    paths:
+      - "hardware/nuc140/**"
+      - ".github/workflows/usb-cdc-compile.yml"
+  push:
+    branches: [ "feature/usb-cdc-full" ]
+permissions:
+  contents: read
+jobs:
+  usb-cdc-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build USB CDC implementation and echo sketch for Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/nuc140-usb-cdc
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -c "$CORE/USBSerial.cpp" -o /tmp/nuc140-usb-cdc/usb.o
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -c "$CORE/main.cpp" -o /tmp/nuc140-usb-cdc/main.o
+          clang $OPT -std=gnu11 -I"$CORE" -I"$VARIANT" -c "$CORE/startup.c" -o /tmp/nuc140-usb-cdc/startup.o
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -include "$CORE/Arduino.h" -x c++ -c hardware/nuc140/libraries/Nuc140Examples/examples/USB_CDC_Serial_Echo/USB_CDC_Serial_Echo.ino -o /tmp/nuc140-usb-cdc/sketch.o
+          echo "PASS: USB CDC sources and sketch compiled for Cortex-M0"

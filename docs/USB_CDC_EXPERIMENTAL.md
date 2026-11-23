@@ -11,3 +11,9 @@ Test procedure: Upload the USB_CDC_Serial_Echo sketch through Nu-Link while keep
 Source references: OpenNuvoton/NUC100BSP (Apache-2.0), especially StdDriver USBD_VCOM, usbd.c, NUC100Series.h.
 
 Known limitations: no USB suspend power management, no asynchronous multi-port support, fixed 256 byte software RX/TX queues, control-transfer code and host interoperability need physical testing, no automatic USB-port-based sketch uploads. API is experimental; keep stable v0.1.5 untouched.
+
+## Hardware test results — 2026-11-23
+
+Board: Nu-LB-NUC140 V2.0, NUC140VE3CN. User reports that the USB CDC serial monitor displays repeated `Hello from NUC140 USB CDC` messages, and sending `TEST123` returns an echo `TEST123`. These results indicate basic host-to-device and device-to-host USB CDC transfers work. An earlier Windows Device Manager enumeration attempt showed Code 43 (`VID_0000&PID_0002`), but subsequent test produced working CDC message and echo; Windows device name and COM port number are not recorded. This report is user-observed rather than independently reproduced.
+
+Pending validation before merging/release: cold plug/unplug under independent reliable power, USB bus reset and suspend/resume, repeated reconnect/re-enumeration, throughput/long transfers/ring-buffer overflow, stable coexistence with Timer/tone/SPI/I2C, and approved production VID/PID. Do not advertise release-ready yet.

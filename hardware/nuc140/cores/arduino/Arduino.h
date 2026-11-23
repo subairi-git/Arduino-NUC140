@@ -19,6 +19,21 @@ extern "C" {
 #define F(x) x
 #define bit(b) (1UL << (b))
 #define _BV(b) (1UL << (b))
+#define CHANGE 1
+#define FALLING 2
+#define RISING 3
+#define digitalPinToInterrupt(pin) (pin)
+void attachInterrupt(uint32_t pin, void (*callback)(void), int mode);
+void detachInterrupt(uint32_t pin);
+bool timerBegin(uint8_t index, uint32_t periodUs, void (*callback)(void));
+bool timerSetPeriod(uint8_t index, uint32_t periodUs);
+bool timerAttachInterrupt(uint8_t index, void (*callback)(void));
+void timerDetachInterrupt(uint8_t index);
+void timerStart(uint8_t index);
+void timerStop(uint8_t index);
+void timerEnd(uint8_t index);
+static inline void noInterrupts(void) { __asm__ volatile("cpsid i" ::: "memory"); }
+static inline void interrupts(void) { __asm__ volatile("cpsie i" ::: "memory"); }
 void init(void);
 void pinMode(uint32_t pin, uint32_t mode);
 void digitalWrite(uint32_t pin, uint32_t value);

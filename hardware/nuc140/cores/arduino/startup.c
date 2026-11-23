@@ -10,6 +10,14 @@ void NMI_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void HardFault_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void SVC_Handler(void) __attribute__((weak, alias("Default_Handler")));
 void PendSV_Handler(void) __attribute__((weak, alias("Default_Handler")));
+void EINT0_IRQHandler(void);
+void EINT1_IRQHandler(void);
+void GPAB_IRQHandler(void);
+void GPCDEF_IRQHandler(void);
+void TMR0_IRQHandler(void);
+void TMR1_IRQHandler(void);
+void TMR2_IRQHandler(void);
+void TMR3_IRQHandler(void);
 void IRQ_Default(void) __attribute__((weak, alias("Default_Handler")));
 // Reserved IRQs currently map to Default_Handler. No interrupts beyond SysTick supported.
 __attribute__((section(".isr_vector"), used))
@@ -19,7 +27,38 @@ const uintptr_t vectors[] = {
  0,0,0,0,0,0,0, (uintptr_t)SVC_Handler,
  0,0,(uintptr_t)PendSV_Handler,(uintptr_t)SysTick_Handler,
  // NUC140 has 32 external IRQ slots; all disabled by default.
- [16 ... 47] = (uintptr_t)IRQ_Default
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)EINT0_IRQHandler,
+ (uintptr_t)EINT1_IRQHandler,
+ (uintptr_t)GPAB_IRQHandler,
+ (uintptr_t)GPCDEF_IRQHandler,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)TMR0_IRQHandler,
+ (uintptr_t)TMR1_IRQHandler,
+ (uintptr_t)TMR2_IRQHandler,
+ (uintptr_t)TMR3_IRQHandler,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default,
+ (uintptr_t)IRQ_Default
 };
 void Reset_Handler(void) {
  uint32_t *src=&_sidata;

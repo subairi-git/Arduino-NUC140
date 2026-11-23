@@ -378,3 +378,7 @@ size_t USBSerial::println(int v,int b){return print(v,b)+println();}
 size_t USBSerial::println(unsigned int v,int b){return print(v,b)+println();}
 size_t USBSerial::println(long v,int b){return print(v,b)+println();}
 size_t USBSerial::println(unsigned long v,int b){return print(v,b)+println();}
+
+uint32_t USBSerial::debugResetCount() const {return busResets;}
+uint32_t USBSerial::debugSetupCount() const {return setups;}
+uint32_t USBSerial::debugBulkRxBytes() const {return bulkReceived;}

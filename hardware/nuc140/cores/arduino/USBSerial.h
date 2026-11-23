@@ -32,6 +32,9 @@ class USBSerial {
   size_t println(long v,int base=DEC);
   size_t println(unsigned long v,int base=DEC);
   void poll();
+  uint32_t debugResetCount() const;
+  uint32_t debugSetupCount() const;
+  uint32_t debugBulkRxBytes() const;
  private:
   size_t printNumber(unsigned long v,int base);
 };

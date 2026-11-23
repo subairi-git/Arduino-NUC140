@@ -17,7 +17,10 @@ void loop() {
     last=millis();
     Serial.print("millis=");Serial.print(last);
     Serial.print(" usbConfigured=");Serial.print(SerialUSB.connected()?1:0);
-    Serial.print(" dtr=");Serial.println(SerialUSB?1:0);
+    Serial.print(" dtr=");Serial.print(SerialUSB?1:0);
+    Serial.print(" reset=");Serial.print(SerialUSB.debugResetCount());
+    Serial.print(" setup=");Serial.print(SerialUSB.debugSetupCount());
+    Serial.print(" rxBytes=");Serial.println(SerialUSB.debugBulkRxBytes());
     if(SerialUSB)SerialUSB.println("Hello from NUC140 USB CDC");
   }
 }

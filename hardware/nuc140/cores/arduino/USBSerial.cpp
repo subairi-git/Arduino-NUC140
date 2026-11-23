@@ -215,7 +215,7 @@ static void bulkOut(void) {
     return;
   }
   for(unsigned i=0;i<n;i++) {
-    rxData[rxHead]=(uint8_t)M(USB_RAM+EP3_BUFFER+i); // byte access mode
+    rxData[rxHead]=*(volatile uint8_t *)(USB_RAM+EP3_BUFFER+i); // byte access mode
     rxHead=(uint8_t)(rxHead+1);
   }
   if(n)bulkReceived+=n;

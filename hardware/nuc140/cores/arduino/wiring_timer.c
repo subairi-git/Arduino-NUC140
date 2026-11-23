@@ -47,7 +47,7 @@ bool timerBegin(uint8_t i, uint32_t periodUs, void (*callback)(void)) {
   if(!dividers(periodUs,&pre,&cmp)) return false;
   uint32_t s=irqLock(), base=bases[i];
   // Explicit timerBegin(3) takes ownership from tone() and silences its pin.
-  if(i==3 && toneActive) {toneActive=0;digitalWrite(tonePin,LOW);}
+  if(i==3 && toneActive && callback!=toneTick) {toneActive=0;digitalWrite(tonePin,LOW);}
   disableIrq(i); MMIO(base)=0; callbacks[i]=0; configured[i]=0;
   MMIO(PROTECT)=0x59;MMIO(PROTECT)=0x16;MMIO(PROTECT)=0x88;
   if(!(MMIO(PROTECT)&1)) {irqUnlock(s);return false;}

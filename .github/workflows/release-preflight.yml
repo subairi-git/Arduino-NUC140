@@ -1,7 +1,7 @@
-name: NUC140 v0.1.5 release preflight
+name: NUC140 v0.1.6 release preflight
 on:
   push:
-    branches: ["release/v0.1.5"]
+    branches: ["release/v0.1.6"]
   pull_request:
     paths:
       - "scripts/build_release.py"
@@ -18,21 +18,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Build reproducible v0.1.5 Boards Manager package
+      - name: Build reproducible v0.1.6 Boards Manager package
         env:
-          NUC140_RELEASE_REF: v0.1.5
+          NUC140_RELEASE_REF: v0.1.6
         run: python scripts/build_release.py
       - name: Verify archive, versions, APIs and SHA256
         run: python scripts/verify_package.py
       - name: Verify reproducible archive hashing
         env:
-          NUC140_RELEASE_REF: v0.1.5
+          NUC140_RELEASE_REF: v0.1.6
         shell: bash
         run: |
           set -euo pipefail
-          FIRST="$(sha256sum dist/nuc140-0.1.5.tar.gz | cut -d' ' -f1)"
+          FIRST="$(sha256sum dist/nuc140-0.1.6.tar.gz | cut -d' ' -f1)"
           python scripts/build_release.py
-          SECOND="$(sha256sum dist/nuc140-0.1.5.tar.gz | cut -d' ' -f1)"
+          SECOND="$(sha256sum dist/nuc140-0.1.6.tar.gz | cut -d' ' -f1)"
           test "$FIRST" = "$SECOND"
   compile:
     runs-on: ubuntu-latest
@@ -52,12 +52,12 @@ jobs:
             name="$(basename "$file" .c)"
             clang $COMMON -std=gnu11 -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -c "$file" -o "/tmp/nuc140-release-compile/$name.o"
           done
-          for file in "$ROOT"/Wire/src/Wire.cpp "$ROOT"/SPI/src/SPI.cpp "$ROOT"/NUC140LCD/src/NUC140LCD.cpp "$ROOT"/NUC140RTC/src/NUC140RTC.cpp; do
+          for file in "$ROOT"/Wire/src/Wire.cpp "$ROOT"/SPI/src/SPI.cpp "$ROOT"/NUC140LCD/src/NUC140LCD.cpp "$ROOT"/NUC140RTC/src/NUC140RTC.cpp "$ROOT"/SevenSegment4/src/SevenSegment4.cpp "$CORE"/USBSerial.cpp; do
             name="$(basename "$file" .cpp)"
-            clang++ $COMMON $CXX -I"$CORE" -I"$VARIANT" -I"$ROOT"/Wire/src -I"$ROOT"/SPI/src -I"$ROOT"/NUC140LCD/src -I"$ROOT"/NUC140RTC/src -c "$file" -o "/tmp/nuc140-release-compile/$name.o"
+            clang++ $COMMON $CXX -I"$CORE" -I"$VARIANT" -I"$ROOT"/Wire/src -I"$ROOT"/SPI/src -I"$ROOT"/NUC140LCD/src -I"$ROOT"/NUC140RTC/src -I"$ROOT"/SevenSegment4/src -c "$file" -o "/tmp/nuc140-release-compile/$name.o"
           done
           for file in "$ROOT"/NUC140PWM/examples/*/*.ino "$ROOT"/NUC140LCD/examples/*/*.ino "$ROOT"/NUC140RTC/examples/*/*.ino "$ROOT"/Nuc140Examples/examples/*/*.ino; do
             name="$(basename "$file" .ino)"
-            clang++ $COMMON $CXX -I"$CORE" -I"$VARIANT" -I"$ROOT"/Wire/src -I"$ROOT"/SPI/src -I"$ROOT"/NUC140LCD/src -I"$ROOT"/NUC140RTC/src -I"$ROOT"/NUC140PWM/src -include "$CORE/Arduino.h" -x c++ -c "$file" -o "/tmp/nuc140-release-compile/$name.o"
+            clang++ $COMMON $CXX -I"$CORE" -I"$VARIANT" -I"$ROOT"/Wire/src -I"$ROOT"/SPI/src -I"$ROOT"/NUC140LCD/src -I"$ROOT"/NUC140RTC/src -I"$ROOT"/NUC140PWM/src -I"$ROOT"/SevenSegment4/src -include "$CORE/Arduino.h" -x c++ -c "$file" -o "/tmp/nuc140-release-compile/$name.o"
           done
           echo "PASS: ARM Cortex-M0 I/O drivers and onboard LCD, RTC, PWM examples"

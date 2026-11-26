@@ -1,11 +1,6 @@
 name: Publish NUC140 v0.1.5 Boards Manager package
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "hardware/nuc140/**"
-      - "RELEASE_NOTES-v0.1.5.md"
-      - ".github/workflows/publish-v0.1.5.yml"
+  # Historical publisher retained for maintenance; do not run on new versions.
   workflow_dispatch:
 permissions:
   contents: write

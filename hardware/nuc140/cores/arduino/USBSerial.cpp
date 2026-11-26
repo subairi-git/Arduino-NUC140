@@ -1,9 +1,10 @@
 // Experimental USB CDC ACM core implementation for NUC140VE3CN.
 // Derived from register definitions and protocol flow in OpenNuvoton NUC100BSP
 // USBD_VCOM (Apache-2.0); self-contained and independent of Nuvoton BSP headers.
-// IMPORTANT: sample VID/PID 0416:B002 belongs to Nuvoton. TEST ONLY, not for release.
+// The public package requires a user-authorized USB VID/PID before CDC activation.
 #include "Arduino.h"
 #include "USBSerial.h"
+#include "USBSerialConfig.h"
 #define M(a) (*(volatile uint32_t *)(a))
 #define SYSREG 0x50000100UL
 #define CLK_PWRCON 0x50000200UL
@@ -37,7 +38,9 @@
 #define USB_SETUP (1UL<<31)
 static const uint8_t deviceDesc[]={
   18,1,0x10,0x01,2,0,0,64,
-  0x16,0x04,0x02,0xB0,0,1,1,2,0,1
+  (uint8_t)(NUC140_USB_VID & 0xffU), (uint8_t)((NUC140_USB_VID >> 8) & 0xffU),
+  (uint8_t)(NUC140_USB_PID & 0xffU), (uint8_t)((NUC140_USB_PID >> 8) & 0xffU),
+  0,1,1,2,0,1
 };
 static const uint8_t configDesc[]={
   9,2,67,0,2,1,0,0x80,50,
@@ -52,10 +55,8 @@ static const uint8_t configDesc[]={
   7,5,0x02,2,64,0,0
 };
 static const uint8_t lang[]={4,3,9,4};
-static const uint8_t maker[]={16,3,'N',0,'u',0,'v',0,'o',0,'t',0,'o',0,'n',0};
-static const uint8_t product[]={32,3,
-  'U',0,'S',0,'B',0,' ',0,'V',0,'i',0,'r',0,'t',0,
-  'u',0,'a',0,'l',0,' ',0,'C',0,'O',0,'M',0};
+static const uint8_t maker[]={34,3,'N',0,'U',0,'C',0,'1',0,'4',0,'0',0,' ',0,'C',0,'o',0,'m',0,'m',0,'u',0,'n',0,'i',0,'t',0,'y',0};
+static const uint8_t product[]={30,3,'N',0,'U',0,'C',0,'1',0,'4',0,'0',0,' ',0,'U',0,'S',0,'B',0,' ',0,'C',0,'D',0,'C',0};
 static uint8_t setup[8],lineCoding[7]={0,0xC2,1,0,0,0,8};
 static uint8_t ctrlAnswer[2];
 static const uint8_t *ctrlRemain;
@@ -269,6 +270,8 @@ USBSerial::USBSerial(){}
 bool USBSerial::begin(uint32_t baud) {
   (void)baud; // CDC line coding negotiated by host; not UART baud clock.
   if(started)return true;
+  // Refuse to advertise a device without an authorized VID/PID.
+  if(NUC140_USB_VID==0U || NUC140_USB_PID==0U) return false;
   if((M(CLK_CLKSEL0)&7UL)==2UL)return false; // do not reprogram PLL used by HCLK
   uint32_t saved=irqSave();unlock();
   bool ok=(M(SYSREG)&1UL)!=0UL;

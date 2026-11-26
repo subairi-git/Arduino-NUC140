@@ -28,6 +28,9 @@ assert f"{archive_root}/platform.txt" in paths, "Missing platform.txt"
 assert f"{archive_root}/cores/arduino/Arduino.h" in paths, "Missing Arduino core header"
 assert f"{archive_root}/cores/arduino/wiring_pwm.c" in paths, "Missing analogWrite hardware PWM implementation"
 assert f"{archive_root}/cores/arduino/wiring_analog.c" in paths, "Missing ADC implementation"
+assert f"{archive_root}/cores/arduino/USBSerialConfig.h" in paths, "Missing USB VID/PID safety config"
+assert f"{archive_root}/cores/arduino/USBSerial.cpp" in paths, "Missing USB CDC driver"
+assert f"{archive_root}/libraries/SevenSegment4/src/SevenSegment4.cpp" in paths, "Missing SevenSegment4 driver"
 required_libraries = {
     "Wire": ["src/Wire.h", "src/Wire.cpp"],
     "SPI": ["src/SPI.h", "src/SPI.cpp"],

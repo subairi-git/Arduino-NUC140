@@ -1,6 +1,6 @@
 #include <Arduino.h>
 // Connect USB Device J3 to Windows; Nu-Link remains for programming/UART logs.
-// USB CDC test VID:PID 0416:B002 belongs to Nuvoton and is for laboratory use only.
+// USB CDC requires both authorized NUC140_USB_VID and NUC140_USB_PID.
 void setup() {
   Serial.begin(115200);
   Serial.println("NUC140 USB CDC ACM TEST");

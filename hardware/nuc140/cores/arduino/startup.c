@@ -18,6 +18,7 @@ void TMR0_IRQHandler(void);
 void TMR1_IRQHandler(void);
 void TMR2_IRQHandler(void);
 void TMR3_IRQHandler(void);
+void USBD_IRQHandler(void);
 void IRQ_Default(void) __attribute__((weak, alias("Default_Handler")));
 // Reserved IRQs currently map to Default_Handler. No interrupts beyond SysTick supported.
 __attribute__((section(".isr_vector"), used))
@@ -50,7 +51,7 @@ const uintptr_t vectors[] = {
  (uintptr_t)IRQ_Default,
  (uintptr_t)IRQ_Default,
  (uintptr_t)IRQ_Default,
- (uintptr_t)IRQ_Default,
+ (uintptr_t)USBD_IRQHandler,
  (uintptr_t)IRQ_Default,
  (uintptr_t)IRQ_Default,
  (uintptr_t)IRQ_Default,

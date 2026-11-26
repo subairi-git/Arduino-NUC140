@@ -1,0 +1,80 @@
+name: Publish NUC140 v0.1.6 Boards Manager package
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "hardware/nuc140/**"
+      - "RELEASE_NOTES-v0.1.6.md"
+      - ".github/workflows/publish-v0.1.6.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: publish-nuc140-v0-1-6
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'subairi-git/Arduino-NUC140'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify v0.1.6 release source
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -qx 'version=0.1.6' hardware/nuc140/platform.txt
+          grep -q '0.1.6-experimental' hardware/nuc140/cores/arduino/core_version.h
+          test -f RELEASE_NOTES-v0.1.6.md
+      - name: Create reproducible archive and Boards Manager index
+        env:
+          NUC140_RELEASE_REF: v0.1.6
+        run: python scripts/build_release.py
+      - name: Validate archive content, checksum and versions
+        run: python scripts/verify_package.py
+      - name: Publish GitHub Release and artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=v0.1.6
+          ASSET=dist/nuc140-0.1.6.tar.gz
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release already exists. Verifying published archive SHA-256."
+            mkdir -p /tmp/nuc140-existing-release
+            gh release download "$TAG" --pattern "$(basename "$ASSET")" --dir /tmp/nuc140-existing-release
+            echo "$(sha256sum "$ASSET" | cut -d' ' -f1)  /tmp/nuc140-existing-release/$(basename "$ASSET")" | sha256sum -c -
+          else
+            gh release create "$TAG" "$ASSET" \
+              --target "$GITHUB_SHA" \
+              --title "Arduino NUC140 v0.1.6 — Tone, SevenSegment4 and USB CDC (opt-in IDs)" \
+              --notes-file RELEASE_NOTES-v0.1.6.md
+          fi
+          gh release view "$TAG" --json assets --jq '.assets[].name' | grep -qx 'nuc140-0.1.6.tar.gz'
+      - name: Publish package index to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout -B publish-index origin/main
+          cp dist/package_nuc140_index.json package_nuc140_index.json
+          git add package_nuc140_index.json
+          if git diff --cached --quiet; then
+            echo "Boards Manager package index already current"
+          else
+            git -c user.name='github-actions[bot]' \
+                -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              commit -m "Publish NUC140 v0.1.6 Boards Manager package index"
+            git push origin HEAD:main
+          fi
+      - name: Show published release and index
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view v0.1.6 --json url,tagName,assets
+          grep -A9 '"version": "0.1.6"' package_nuc140_index.json

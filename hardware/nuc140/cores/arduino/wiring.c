@@ -8,7 +8,12 @@
 #define SYST_CVR REG32(0xE000E018UL)
 static volatile uint32_t tick_ms;
 static volatile uint32_t fallback_loops;
-void SysTick_Handler(void) { ++tick_ms; }
+// Optional 7-segment scan hook: linked only when SevenSegment4 library is used.
+void sevenSegment4Tick(void) __attribute__((weak));
+void SysTick_Handler(void) {
+  ++tick_ms;
+  if (sevenSegment4Tick) sevenSegment4Tick();
+}
 void init(void) {
   // Expected factory reset HCLK source: 22.1184MHz HIRC / 1.
   // This clock assumption MUST be confirmed against device configuration words.

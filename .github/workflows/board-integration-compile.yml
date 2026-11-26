@@ -1,0 +1,34 @@
+name: NUC140 Board Integration ARM compile
+on:
+  pull_request:
+    paths:
+      - "hardware/nuc140/**"
+      - ".github/workflows/board-integration-compile.yml"
+  push:
+    branches: [ "feature/usb-cdc-full" ]
+permissions:
+  contents: read
+jobs:
+  integration-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile integrated USB CDC / 7seg / timers / buzzer sketch for Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          LIB=hardware/nuc140/libraries/SevenSegment4/src
+          SKETCH=hardware/nuc140/libraries/Nuc140Examples/examples/Board_Integration_USB_7Seg_Timers_Buzzer/Board_Integration_USB_7Seg_Timers_Buzzer.ino
+          mkdir -p /tmp/nuc140-integration
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          CXX="clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics"
+          CC="clang $OPT -std=gnu11"
+          $CXX -I"$CORE" -I"$VARIANT" -I"$LIB" -include "$CORE/Arduino.h" -x c++ -c "$SKETCH" -o /tmp/nuc140-integration/sketch.o
+          $CXX -I"$CORE" -I"$VARIANT" -I"$LIB" -c "$LIB/SevenSegment4.cpp" -o /tmp/nuc140-integration/7seg.o
+          $CXX -I"$CORE" -I"$VARIANT" -c "$CORE/USBSerial.cpp" -o /tmp/nuc140-integration/usb.o
+          $CC -I"$CORE" -I"$VARIANT" -c "$CORE/wiring_timer.c" -o /tmp/nuc140-integration/timer.o
+          $CC -I"$CORE" -I"$VARIANT" -c "$CORE/wiring.c" -o /tmp/nuc140-integration/wiring.o
+          $CC -I"$CORE" -I"$VARIANT" -c "$CORE/startup.c" -o /tmp/nuc140-integration/startup.o
+          echo "PASS: integrated NUC140 board ARM compile"

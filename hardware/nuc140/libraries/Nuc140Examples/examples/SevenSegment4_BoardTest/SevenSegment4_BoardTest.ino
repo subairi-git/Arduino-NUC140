@@ -1,75 +1,74 @@
 #include <Arduino.h>
 /*
-  Nu-LB-NUC140 V2.0 built-in four-digit seven-segment display TEST
-  Board wiring from official Nuvoton user manual:
-  PE0..PE7 = shared A B C D E F G DOT (segment bus)
-  PC4..PC7 = select digit 1..4 (left to right).
-  Transistor digit drivers and segment resistors are on the board.
+  Nu-LB-NUC140 V2.0 board-mounted 4-digit common-anode seven segment.
+  GPE0..GPE7: shared segment bus (LOW = ON).
+  GPC4..GPC7: digit control (HIGH = ON).
+  PC4 corresponds to the RIGHTMOST digit (ones), PC7 to leftmost.
+  Segment encoding follows a tested NUC140 example:
+  https://gist.github.com/mavif/d31d160ec7bebdfbe4e5
 
-  First experiment assumes segments active-LOW and digit selects active-HIGH.
-  If the digits light inverted or nothing appears, try changing the flags below.
-  This is a standalone Arduino sketch, compatible with USB CDC branch and v0.1.5.
+  This is a hardware validation sketch with no dependency on USB CDC.
 */
-static const bool SEGMENT_ACTIVE_LOW = true;
-static const bool DIGIT_ACTIVE_HIGH = true;
-static const uint8_t SEG_MASK = 0xff;
-static const uint8_t PATTERN_0_TO_9[10] = {
-  0x3F,0x06,0x5B,0x4F,0x66,0x6D,0x7D,0x07,0x7F,0x6F
-}; // Bit0=A, bit1=B, ... bit6=G, bit7=DP
-static uint8_t frame[4]={1,2,3,4};
-static uint32_t lastDigit=0,lastFrame=0;
-static uint8_t currentDigit=0;
-static uint32_t phase=0;
+static const uint8_t SEG_DIGITS[10] = {
+  0x82, 0xEE, 0x07, 0x46, 0x6A,
+  0x52, 0x12, 0xE6, 0x02, 0x62
+};
+static uint8_t digits[4] = {4,3,2,1}; // index 0 = rightmost, shows 1234
+static uint8_t activeDigit=0;
+static uint32_t nextRefresh=0, phaseStart=0;
+static uint8_t phase=0;
 
-static void selectAllOff(){
-  for(uint8_t i=0;i<4;i++)digitalWrite(PC(4+i),DIGIT_ACTIVE_HIGH?LOW:HIGH);
+static inline void allDigitsOff() {
+  for(uint8_t d=0; d<4; d++) digitalWrite(PC(4+d), LOW);
 }
-static void putSegments(uint8_t bits){
-  for(uint8_t i=0;i<8;i++){
-    bool on=(bits & (1U<<i))!=0;
-    digitalWrite(PE(i),SEGMENT_ACTIVE_LOW ? (on?LOW:HIGH) : (on?HIGH:LOW));
+static inline void segmentBits(uint8_t raw) {
+  for(uint8_t bit=0; bit<8; bit++) {
+    digitalWrite(PE(bit), (raw & (1U<<bit)) ? HIGH : LOW);
   }
 }
-static void refreshDigit(){
-  // Turn OFF previous digit before shifting segment pattern, to avoid ghosting.
-  selectAllOff();
-  putSegments(frame[currentDigit]<=9 ? PATTERN_0_TO_9[frame[currentDigit]] : 0);
-  digitalWrite(PC(4+currentDigit),DIGIT_ACTIVE_HIGH?HIGH:LOW);
-  currentDigit=(currentDigit+1)&3U;
+static void refresh() {
+  allDigitsOff(); // blank during update to avoid ghosting
+  segmentBits(SEG_DIGITS[digits[activeDigit]]);
+  digitalWrite(PC(4+activeDigit), HIGH); // one digit at a time
+  activeDigit=(activeDigit+1U)&3U;
 }
-static void displayNumber(uint16_t n){
-  frame[0]=(n/1000)%10;
-  frame[1]=(n/100)%10;
-  frame[2]=(n/10)%10;
-  frame[3]=n%10;
+static void setNumber(uint16_t n) {
+  for(uint8_t d=0; d<4; d++) {
+    digits[d]=n%10U;
+    n/=10U;
+  }
 }
-void setup(){
+void setup() {
   Serial.begin(115200);
-  // No USB CDC dependency; this test also runs with UART alone.
-  for(uint8_t i=0;i<8;i++)pinMode(PE(i),OUTPUT);
-  for(uint8_t i=0;i<4;i++)pinMode(PC(4+i),OUTPUT);
-  selectAllOff();
-  putSegments(0);
-  Serial.println("NUC140 built-in 4-digit 7segment test");
-  Serial.println("PE0-PE7 segments; PC4-PC7 digit selects");
-  Serial.println("Phase 0: 1234; phase 1: 8888; phase 2: 0000; phase 3: counter");
+  // Set segment outputs OFF before enabling digit drivers.
+  for(uint8_t d=0; d<4; d++) {
+    pinMode(PC(4+d), OUTPUT);
+    digitalWrite(PC(4+d), LOW);
+  }
+  for(uint8_t b=0; b<8; b++) {
+    pinMode(PE(b), OUTPUT);
+    digitalWrite(PE(b), HIGH);
+  }
+  nextRefresh=phaseStart=millis();
+  Serial.println("NUC140 4x7SEG COMMON ANODE - Nuvoton wiring LUT");
+  Serial.println("PC4 rightmost / PC7 leftmost; GPE0..7 segment bus");
+  Serial.println("Sequence: 1234 -> 8888 -> 0000 -> counter");
 }
-void loop(){
+void loop() {
   uint32_t now=millis();
-  // 2 ms per digit => 125 full display scans/s.
-  if((uint32_t)(now-lastDigit)>=2UL){
-    lastDigit=now;
-    refreshDigit();
+  if((uint32_t)(now-nextRefresh)>=2U) {
+    nextRefresh=now;
+    refresh();
   }
-  if((uint32_t)(now-lastFrame)>=3000UL){
-    lastFrame=now;
-    phase++;
-    Serial.print("7SEG phase=");Serial.println(phase%4);
+  if((uint32_t)(now-phaseStart)>=3000UL) {
+    phaseStart=now;
+    phase=(phase+1U)&3U;
+    Serial.print("7SEG phase=");Serial.println(phase);
   }
-  switch(phase%4){
-    case 0: frame[0]=1;frame[1]=2;frame[2]=3;frame[3]=4;break;
-    case 1: frame[0]=8;frame[1]=8;frame[2]=8;frame[3]=8;break;
-    case 2: frame[0]=0;frame[1]=0;frame[2]=0;frame[3]=0;break;
-    case 3: displayNumber((uint16_t)((now/100UL)%10000UL));break;
+  switch(phase) {
+    case 0:setNumber(1234);break;
+    case 1:setNumber(8888);break;
+    case 2:setNumber(0);break;
+    default:setNumber((uint16_t)((now/100UL)%10000UL));break;
   }
 }

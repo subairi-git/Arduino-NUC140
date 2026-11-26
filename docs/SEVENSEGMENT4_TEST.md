@@ -12,3 +12,7 @@ Revised example: `SevenSegment4_BoardTest.ino`. Board-specific raw segment words
 Segment bus GPE0–GPE7 active LOW; column digit enable GPC4–GPC7 active HIGH. **GPC4 selects rightmost digit**, GPC7 leftmost. Each digit refreshes at 2 ms slots (125 full scans/s). Sequence: 1234, 8888, 0000, rolling counter. This revision **still requires hardware retest**.
 
 Board pin groups confirmed in Nuvoton Nu-LB-NUC140 User Manual Rev 2.0 page 9.
+
+## Hardware confirmation — 2026-11-26
+
+User tested the revised `SevenSegment4_BoardTest.ino` on Nu-LB-NUC140 V2.0 and confirmed the four-digit display now renders correctly (`ok sudah benar`). This confirms the board-specific glyph LUT, GPE0–GPE7 active-low segment output and GPC4–GPC7 active-high digit selection in the tested configuration. Basic multiplexing PASS. Further stress and simultaneous-peripheral tests not yet performed.

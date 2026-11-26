@@ -25,3 +25,16 @@ Uses `SevenSegment4` library and revised `wiring.c` hook from `feature/usb-cdc-f
 The USB CDC test driver uses Nuvoton example VID/PID 0416:B002 only for local development. Do not publish a production firmware with these identifiers without permission.
 
 If USB CDC fails, UART still reports diagnostic counters; keep Nu-Link connection while testing. Preserve stable release v0.1.5.
+
+## Hardware result — USB CDC with three concurrent timers (2026-11-26)
+
+User reports these live USB CDC J3 serial output lines during the integrated test:
+
+```
+NUC140 OK T0=56 T1=561 T2=1122
+NUC140 OK T0=58 T1=581 T2=1162
+NUC140 OK T0=60 T1=601 T2=1202
+NUC140 OK T0=62 T1=621 T2=1242
+```
+
+Counters increase by +2, +20, +40 each approximately 2-second reporting period, matching configured 1Hz / 10Hz / 20Hz timers. USB CDC TX while timers run: **hardware PASS**. This does not yet separately establish seven-segment refreshing, buzzer audible output or RX commands during the combined test; request user observation for those.

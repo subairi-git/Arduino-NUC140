@@ -38,3 +38,14 @@ NUC140 OK T0=62 T1=621 T2=1242
 ```
 
 Counters increase by +2, +20, +40 each approximately 2-second reporting period, matching configured 1Hz / 10Hz / 20Hz timers. USB CDC TX while timers run: **hardware PASS**. This does not yet separately establish seven-segment refreshing, buzzer audible output or RX commands during the combined test; request user observation for those.
+
+## Complete integrated hardware result — 2026-11-26
+
+The user has now confirmed all remaining tests on the Nu-LB-NUC140 V2.0 board:
+
+- Four-digit seven-segment display: **PASS** (visible, counting correctly).
+- PB11 buzzer under Timer3/tone while the other peripherals run: **PASS** (audible every 5 seconds).
+- USB CDC J3 receive commands and responses: **PASS** (bidirectional communication during combined test).
+- Prior UART/USB report established USB CDC TX and Timer0/1/2 tick counters 1:10:20, **PASS**.
+
+**Conclusion:** Integrated real-board test **PASS** for USB CDC (TX/RX), Timer0–2, Timer3/tone, PB11 buzzer, and SysTick-driven SevenSegment4 simultaneously. This is not an exhaustive regression or stress test; long-duration stability, hot-plug/re-enumeration, speed/throughput, and USB VID/PID authorization are still pending before an official public release.

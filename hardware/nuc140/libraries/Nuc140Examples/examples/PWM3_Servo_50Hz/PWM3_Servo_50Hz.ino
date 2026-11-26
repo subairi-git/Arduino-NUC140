@@ -72,17 +72,6 @@ static bool servoBegin() {
   servoAttached=true;
   return true;
 }
-static void servoEnd() {
-  REG32(PCR)&=~(1UL<<24);
-  REG32(POE)&=~(1UL<<3);
-  if(unlockRegisters()){
-    REG32(GPA_MFP)&=~(1UL<<15);
-    lockRegisters();
-  }
-  pinMode(PA(15),OUTPUT);
-  digitalWrite(PA(15),LOW);
-  servoAttached=false;
-}
 static void servoWriteAngle(uint8_t angle) {
   if(angle>180U)angle=180U;
   servoWriteMicroseconds((uint16_t)(1000UL+((uint32_t)angle*1000UL+90UL)/180UL));

@@ -1,0 +1,24 @@
+name: NUC140 PWM3 servo 50Hz ARM compile
+on:
+  pull_request:
+    paths:
+      - "hardware/nuc140/libraries/Nuc140Examples/examples/PWM3_Servo_50Hz/**"
+      - ".github/workflows/servo-pwm-compile.yml"
+  push:
+    branches: ["feature/servo-pwm-50hz"]
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile PWM3 servo example for NUC140 ARM Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          SKETCH=hardware/nuc140/libraries/Nuc140Examples/examples/PWM3_Servo_50Hz/PWM3_Servo_50Hz.ino
+          clang++ -target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -Wall -Wextra -Werror -I"$CORE" -I"$VARIANT" -include "$CORE/Arduino.h" -x c++ -c "$SKETCH" -o /tmp/servo.o
+          echo "PASS: PWM3 servo sketch compiled for ARM Cortex-M0"

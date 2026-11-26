@@ -1,0 +1,29 @@
+name: NUC140 SevenSegment4 ARM compile
+on:
+  pull_request:
+    paths:
+      - "hardware/nuc140/**"
+      - ".github/workflows/sevensegment-compile.yml"
+  push:
+    branches: [ "feature/usb-cdc-full" ]
+permissions:
+  contents: read
+jobs:
+  sevensegment-compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile SevenSegment4 library, SysTick hook and sketch for Cortex-M0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          CORE=hardware/nuc140/cores/arduino
+          VARIANT=hardware/nuc140/variants/nuc140v2
+          LIB=hardware/nuc140/libraries/SevenSegment4/src
+          EXAMPLE=hardware/nuc140/libraries/SevenSegment4/examples/SevenSegment4_Counter/SevenSegment4_Counter.ino
+          OPT="-target arm-none-eabi -mcpu=cortex-m0 -mthumb -Os -ffreestanding -ffunction-sections -fdata-sections"
+          mkdir -p /tmp/nuc140-7seg
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -I"$LIB" -c "$LIB/SevenSegment4.cpp" -o /tmp/nuc140-7seg/driver.o
+          clang $OPT -std=gnu11 -I"$CORE" -I"$VARIANT" -c "$CORE/wiring.c" -o /tmp/nuc140-7seg/wiring.o
+          clang++ $OPT -std=gnu++11 -fno-exceptions -fno-rtti -fno-threadsafe-statics -I"$CORE" -I"$VARIANT" -I"$LIB" -include "$CORE/Arduino.h" -x c++ -c "$EXAMPLE" -o /tmp/nuc140-7seg/sketch.o
+          echo "PASS: SevenSegment4 Cortex-M0 compilation"

@@ -32,6 +32,14 @@ void timerDetachInterrupt(uint8_t index);
 void timerStart(uint8_t index);
 void timerStop(uint8_t index);
 void timerEnd(uint8_t index);
+// Arduino-compatible tone output, using hardware Timer3.
+// Only one tone at a time. Pin must be connected to a passive buzzer.
+#ifdef __cplusplus
+void tone(uint32_t pin, unsigned int frequency, unsigned long duration = 0);
+#else
+void tone(uint32_t pin, unsigned int frequency, unsigned long duration);
+#endif
+void noTone(uint32_t pin);
 static inline void noInterrupts(void) { __asm__ volatile("cpsid i" ::: "memory"); }
 static inline void interrupts(void) { __asm__ volatile("cpsie i" ::: "memory"); }
 void init(void);
@@ -50,4 +58,5 @@ void yield(void);
 #ifdef __cplusplus
 }
 #include "HardwareSerial.h"
+#include "USBSerial.h"
 #endif
